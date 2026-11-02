@@ -36,13 +36,23 @@ function getEngine() {
   return engine;
 }
 
-export async function loadModel(id: string, onProgress: (r: InitProgressReport) => void) {
-  if (loaded === id) return;
+let pending: { id: string; promise: Promise<void> } | null = null;
+
+// Concurrent calls for the same model share one reload: a second reload() aborts the first.
+export function loadModel(id: string, onProgress: (r: InitProgressReport) => void) {
   const e = getEngine();
   e.setInitProgressCallback(onProgress);
+  if (loaded === id) return Promise.resolve();
+  if (pending?.id === id) return pending.promise;
   loaded = null;
-  await e.reload(id);
-  loaded = id;
+  const promise = (async () => {
+    await e.reload(id);
+    loaded = id;
+  })().finally(() => {
+    if (pending?.promise === promise) pending = null;
+  });
+  pending = { id, promise };
+  return promise;
 }
 
 export const loadedModel = () => loaded;

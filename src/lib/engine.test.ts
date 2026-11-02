@@ -44,6 +44,12 @@ test("loadModel skips reload when the model is already loaded", async () => {
   expect(engine.loadedModel()).toBe("a");
 });
 
+test("concurrent loadModel calls for the same model share one reload", async () => {
+  await Promise.all([engine.loadModel("d", () => {}), engine.loadModel("d", () => {})]);
+  expect(mlc.reload).toHaveBeenCalledTimes(1);
+  expect(engine.loadedModel()).toBe("d");
+});
+
 test("loadModel leaves nothing loaded when reload fails", async () => {
   mlc.reload.mockRejectedValueOnce(new Error("oom"));
   await expect(engine.loadModel("b", () => {})).rejects.toThrow("oom");
