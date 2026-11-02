@@ -150,6 +150,7 @@ export function AnonymizerApp() {
                 Texto original
               </h2>
               <div className="flex items-center gap-1">
+                <FileInfo />
                 <button
                   type="button"
                   onClick={() => fileInput.current?.click()}
@@ -158,7 +159,6 @@ export function AnonymizerApp() {
                   <FileUp className="size-3.5" aria-hidden />
                   Abrir archivo
                 </button>
-                <FileInfo />
               </div>
               <input
                 ref={fileInput}

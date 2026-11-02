@@ -10,7 +10,7 @@ export const FORMATS = [
 export const ACCEPT = ".txt,.md,.csv,.docx,.odt,.pdf";
 
 // The model reads ~2000 chars per call: bigger files mean very long runs in the browser.
-export const MAX_MB = 5;
+export const MAX_MB = 20;
 
 export class ExtractionError extends Error {}
 
