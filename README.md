@@ -17,16 +17,24 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 
 ## What it detects
 
-| Category    | Detection                                                         | Placeholder     |
-| :---------- | :---------------------------------------------------------------- | :-------------- |
-| Personas    | Model                                                             | `[PERSONA_1]`   |
-| Empresas    | Model + regex fallback for legal forms (S.L., S.A., S.Coop.…)     | `[EMPRESA_1]`   |
-| Emails      | Regex                                                             | `[EMAIL_1]`     |
-| Teléfonos   | Regex, Spanish format with optional +34/0034 and separators       | `[TELEFONO_1]`  |
-| DNI/NIE     | Regex, dots and dashes allowed                                    | `[DNI_1]`       |
-| Importes    | Regex, €/EUR/euros or Spanish thousands format (1.500,00)         | `[IMPORTE_1]`   |
-| Direcciones | Model + regex fallback for street type + number                   | `[DIRECCION_1]` |
-| Cuentas     | Regex, full or partial IBAN and 20-digit CCC                      | `[CUENTA_1]`    |
+| Category         | Detection                                                         | Placeholder     |
+| :--------------- | :---------------------------------------------------------------- | :-------------- |
+| Personas         | Model                                                             | `[PERSONA_1]`   |
+| Empresas         | Model + regex fallback for legal forms (S.L., S.A., S.Coop.…)     | `[EMPRESA_1]`   |
+| Emails           | Regex                                                             | `[EMAIL_1]`     |
+| Teléfonos        | Regex, Spanish (optional +34/0034) and international `+XX`        | `[TELEFONO_1]`  |
+| DNI/NIE          | Regex, dots and dashes allowed                                    | `[DNI_1]`       |
+| CIF              | Regex + control digit                                             | `[CIF_1]`       |
+| Seguridad Social | Regex + mod-97 control                                            | `[NSS_1]`       |
+| Pasaportes       | Regex, number after "pasaporte"                                   | `[PASAPORTE_1]` |
+| Importes         | Regex, €/EUR/euros or Spanish thousands format (1.500,00)         | `[IMPORTE_1]`   |
+| Cuentas          | Regex, full or partial IBAN and 20-digit CCC                      | `[CUENTA_1]`    |
+| Tarjetas         | Regex, 13–19 digits + Luhn                                        | `[TARJETA_1]`   |
+| Direcciones      | Model + regex fallback for street type + number                   | `[DIRECCION_1]` |
+| Matrículas       | Regex, current format 1234 BCD                                    | `[MATRICULA_1]` |
+| Nacimiento       | Regex, dates after "nacido el" / "fecha de nacimiento"            | `[FECHA_1]`     |
+| IP               | Regex, IPv4                                                       | `[IP_1]`        |
+| URLs             | Regex, http(s) and www                                            | `[URL_1]`       |
 
 - The same entity always gets the **same placeholder**.
 - A filter dialog with checkboxes chooses **which categories** to anonymize (all on by default).

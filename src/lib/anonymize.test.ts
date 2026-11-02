@@ -8,10 +8,13 @@ import {
   needsModel,
   normalize,
   hide,
+  luhn,
   parseEntities,
   restore,
   revert,
   segments,
+  validCif,
+  validNss,
   type Category,
   type Entities,
 } from "./anonymize";
@@ -32,6 +35,38 @@ describe("regex", () => {
     expect(mapping.map((m) => m.original)).toEqual([
       "ana@ejemplo.com", "+34 612 345 678", "45.812.339-K", "X1234567L", "ES91 2100 0418 4502 0005 1332",
     ]);
+  });
+
+  it("CIF, Seguridad Social, tarjetas, pasaporte, matrícula, nacimiento, IP, URL y teléfono extranjero", async () => {
+    const text = [
+      "Empresa B-12345674 y Q1234567D; falso B12345670.",
+      "NSS 28/12345678/40, no 28/12345678/41.",
+      "Tarjeta 4111 1111 1111 1111; pedido 4111 1111 1111 1112.",
+      "Pasaporte nº PAA123456. Matrícula 1234 BCD.",
+      "Nacido el 14/05/1985; firmado el 12/03/2026. Fecha de nacimiento: 3 de mayo de 1990.",
+      "IP 192.168.1.20 en https://ejemplo.com/perfil?id=7. Tel +49 30 1234567.",
+    ].join("\n");
+    const { anonymized } = await anonymize(text, DEFAULT_CATEGORIES.filter((c) => !needsModel([c])), extractor());
+    expect(anonymized).toBe(
+      [
+        "Empresa [CIF_1] y [CIF_2]; falso B12345670.",
+        "NSS [NSS_1], no 28/12345678/41.",
+        "Tarjeta [TARJETA_1]; pedido 4111 1111 1111 1112.",
+        "Pasaporte nº [PASAPORTE_1]. Matrícula [MATRICULA_1].",
+        "Nacido el [FECHA_1]; firmado el 12/03/2026. Fecha de nacimiento: [FECHA_2].",
+        "IP [IP_1] en [URL_1]. Tel [TELEFONO_1].",
+      ].join("\n"),
+    );
+  });
+
+  it("validadores", () => {
+    expect(luhn("4111-1111-1111-1111")).toBe(true);
+    expect(luhn("4111111111111112")).toBe(false);
+    expect(validCif("B12345674")).toBe(true);
+    expect(validCif("Q1234567D")).toBe(true);
+    expect(validCif("B12345675")).toBe(false);
+    expect(validNss("281234567840")).toBe(true);
+    expect(validNss("281234567841")).toBe(false);
   });
 
   it("numera por orden de aparición aunque el modelo devuelva otro orden", async () => {

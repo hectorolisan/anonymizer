@@ -53,7 +53,9 @@ Patterns that span files:
 - **No server, ever**: `next.config.ts` sets `output: "export"`. No route handlers, server actions,
   `cookies()` or `next/image` optimisation. Nothing is persisted: the mapping lives only in React
   state and disappears with the tab. Don't add storage for texts or mappings.
-- **Pipeline** (`anonymize()`): 1) `FIXED_RULES` regex (email, DNI/NIE, IBAN/CCC, amounts, phones)
+- **Pipeline** (`anonymize()`): 1) `FIXED_RULES` regex (URL, email, IP, ids, accounts, cards, dates of birth, plates, amounts,
+  phones; order matters, and a rule may carry a checksum: CIF, NSS, Luhn. DNI/NIE and IBAN are not
+  checksum-filtered on purpose: a typo is still personal data)
   so the model already sees placeholders; 2) the model extracts `personas` / `empresas` /
   `direcciones` only if one of those categories is active (`needsModel`), over `chunk()`s of
   ~2000 chars because the context window is 4096 tokens; 3) `FALLBACK_RULES` regex (companies with

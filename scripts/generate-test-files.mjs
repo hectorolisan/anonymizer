@@ -23,6 +23,26 @@ const dni = (i) => {
   return `${pad(n, 8)}${"TRWAGMYFPDXBNJZSQVHLCKE"[n % 23]}`;
 };
 
+// Valid control digits, so the checksum rules find them.
+const cif = (i) => {
+  const d = pad((1234567 + i * 7) % 10000000, 7);
+  const sum = [...d].map(Number).reduce((a, n, k) => a + (k % 2 ? n : Math.floor((n * 2) / 10) + ((n * 2) % 10)), 0);
+  return `B${d}${(10 - (sum % 10)) % 10}`;
+};
+const nss = (i) => {
+  const n = 10000000 + ((i * 7919) % 90000000);
+  return `28/${n}/${pad(Number(`28${n}`) % 97, 2)}`;
+};
+const card = (i) => {
+  const body = `4${pad((i * 104729) % 1e14, 14)}`;
+  let sum = 0;
+  for (const [k, c] of [...body].reverse().entries()) {
+    const n = Number(c) * (k % 2 ? 1 : 2);
+    sum += n > 9 ? n - 9 : n;
+  }
+  return `${body}${(10 - (sum % 10)) % 10}`.replace(/(\d{4})(?=\d)/g, "$1 ");
+};
+
 function record(i) {
   const person = `${pick(NAMES, i)} ${pick(SURNAMES, i * 3)} ${pick(SURNAMES, i * 7 + 1)}`;
   const contact = `${pick(NAMES, i + 4)} ${pick(SURNAMES, i + 5)}`;
@@ -37,6 +57,14 @@ function record(i) {
     company: pick(COMPANIES, i),
     address: `${pick(STREETS, i)} ${(i % 200) + 1}, ${(i % 9) + 1}º izq, ${pick(CITIES, i)}`,
     iban: `ES91 2100 ${pad(i % 10000, 4)} ${pad((i * 13) % 10000, 4)} ${pad((i * 17) % 10000, 4)} ${pad((i * 19) % 10000, 4)}`,
+    cif: cif(i),
+    nss: nss(i),
+    card: card(i),
+    passport: `PA${pad((i * 31) % 1000000, 6)}`,
+    plate: `${pad((i * 97) % 10000, 4)} ${pick(["BCD", "FGH", "JKL", "MNP", "RST"], i)}`,
+    birth: `${pad((i % 28) + 1, 2)}/${pad((i % 12) + 1, 2)}/${1960 + (i % 40)}`,
+    ip: `192.168.${i % 256}.${(i * 7) % 254 + 1}`,
+    url: `https://ejemplo.com/clientes/${i + 1}`,
     amount: `${((i % 90) + 1).toLocaleString("es-ES")}.${pad((i * 37) % 1000, 3)},00`,
   };
 }
@@ -50,6 +78,8 @@ function contract(i) {
     `De una parte, ${r.person}, con DNI ${r.dni}, en nombre de ${r.company}, con domicilio en ${r.address}.`,
     `De otra parte, ${r.contact}, con NIE ${r.nie}, que actúa en su propio nombre.`,
     `Contacto: ${r.email} o en el teléfono ${r.phone}.`,
+    `${r.person}, nacido el ${r.birth}, con pasaporte ${r.passport} y número de la Seguridad Social ${r.nss}. ${r.company} tiene CIF ${r.cif}.`,
+    `Pago con la tarjeta ${r.card}. Vehículo con matrícula ${r.plate}. Alta desde la IP ${r.ip} en ${r.url}.`,
     `El importe total asciende a ${r.amount} EUR, que se abonará en la cuenta ${r.iban}.`,
     `Ambas partes, ${r.person} y ${r.contact}, firman el presente contrato.`,
   ];

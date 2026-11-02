@@ -2,7 +2,8 @@
 // Ported from beailabs/anonimizador (backend/anonymize.py).
 
 export const CATEGORIES = [
-  "PERSONA", "EMPRESA", "EMAIL", "TELEFONO", "DNI", "IMPORTE", "DIRECCION", "CUENTA",
+  "PERSONA", "EMPRESA", "EMAIL", "TELEFONO", "DNI", "CIF", "NSS", "PASAPORTE",
+  "IMPORTE", "CUENTA", "TARJETA", "DIRECCION", "MATRICULA", "FECHA", "IP", "URL",
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
@@ -13,20 +14,36 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   EMAIL: "Emails",
   TELEFONO: "Teléfonos",
   DNI: "DNI/NIE",
+  CIF: "CIF",
+  NSS: "Seguridad Social",
+  PASAPORTE: "Pasaportes",
   IMPORTE: "Importes",
-  DIRECCION: "Direcciones",
   CUENTA: "Cuentas",
+  TARJETA: "Tarjetas",
+  DIRECCION: "Direcciones",
+  MATRICULA: "Matrículas",
+  FECHA: "Nacimiento",
+  IP: "IP",
+  URL: "URLs",
 };
 
 export const CATEGORY_HINTS: Record<Category, string> = {
   PERSONA: "Nombres y apellidos",
   EMPRESA: "Empresas y organizaciones",
   EMAIL: "Direcciones de correo",
-  TELEFONO: "Formato español, con o sin +34",
+  TELEFONO: "Español (con o sin +34) e internacional",
   DNI: "DNI y NIE, con puntos o guiones",
+  CIF: "NIF de empresa con control válido",
+  NSS: "Número de afiliación con control válido",
+  PASAPORTE: "Número tras «pasaporte»",
   IMPORTE: "Cantidades con €, EUR o 1.500,00",
-  DIRECCION: "Calle, número, CP y ciudad",
   CUENTA: "IBAN completo o parcial y CCC",
+  TARJETA: "13 a 19 dígitos que pasan Luhn",
+  DIRECCION: "Calle, número, CP y ciudad",
+  MATRICULA: "Formato actual: 1234 BCD",
+  FECHA: "Fecha tras «nacido el» o «nacimiento»",
+  IP: "Direcciones IPv4",
+  URL: "Enlaces http(s) y www",
 };
 
 export const DEFAULT_CATEGORIES: Category[] = [...CATEGORIES];
@@ -71,6 +88,52 @@ const IMPORTE_RE =
 // Spanish phone: 9 digits, optional +34/0034, optional separators.
 const TELEFONO_RE =
   /(?<![\p{L}\p{N}_])(?:(?:\+34|0034)[ \-]?)?(?:\d{3}[ \-]?\d{3}[ \-]?\d{3}|\d{3}[ \-]?\d{2}[ \-]?\d{2}[ \-]?\d{2})(?![\p{L}\p{N}_])/gu;
+// Other countries: + prefix, 7 to 13 more digits.
+const TELEFONO_INTL_RE = /(?<![\p{L}\p{N}_+])\+(?!34)\d{1,3}(?:[ \-]?\d){6,12}(?![\p{L}\p{N}_])/gu;
+
+const URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>"'()]*[^\s<>"'().,;:!?]/g;
+const IP_RE = /(?<![\d.])(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?![\d]|\.\d)/g;
+
+// Company NIF: org letter + 7 digits + control (digit or letter).
+const CIF_RE = /(?<![\dA-Za-z])[ABCDEFGHJNPQRSUVW]-?\d{7}-?[\dA-J](?![\dA-Za-z])/g;
+// Social security: province (2) + number (8) + control (2), with / - or spaces.
+const NSS_RE = /(?<![\d/])\d{2}[ /\-]?\d{8}[ /\-]?\d{2}(?![\d/])/g;
+// Cards: 13-19 digits, separators allowed. Luhn filters order numbers and the like.
+const TARJETA_RE = /(?<!\d)\d(?:[ \-]?\d){12,18}(?!\d)/g;
+const PASAPORTE_RE = /(?<=pasaporte\s*(?:(?:n[º°.o]?|número)\s*)?:?\s*)[A-Z]{2,3}\d{6,7}(?![\dA-Za-z])/gi;
+// Current plates: no vowels, Ñ or Q.
+const MATRICULA_RE = /(?<![\p{L}\p{N}])\d{4}[ \-]?[BCDFGHJKLMNPRSTVWXYZ]{3}(?![\p{L}\p{N}])/gu;
+// Only birth dates (a contract date is not personal data).
+const FECHA_RE =
+  /(?<=(?:nacid[oa]s?|nacimiento|f\.\s?nac\.?)[\s:]*(?:el\s+|en\s+)?)(?:\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}|\d{1,2}\s+de\s+[a-záéíóú]+\s+de\s+\d{4})/gi;
+
+const digits = (s: string) => s.replace(/\D/g, "");
+
+export function luhn(s: string) {
+  let sum = 0;
+  for (const [i, d] of [...digits(s)].reverse().entries()) {
+    const n = Number(d) * (i % 2 ? 2 : 1);
+    sum += n > 9 ? n - 9 : n;
+  }
+  return sum % 10 === 0;
+}
+
+export function validCif(s: string) {
+  const v = s.replace(/-/g, "").toUpperCase();
+  const d = [...v.slice(1, 8)].map(Number);
+  const sum = d.reduce((acc, n, i) => acc + (i % 2 ? n : Math.floor((n * 2) / 10) + ((n * 2) % 10)), 0);
+  const c = (10 - (sum % 10)) % 10;
+  return v[8] === String(c) || v[8] === "JABCDEFGHI"[c];
+}
+
+export function validNss(s: string) {
+  const v = digits(s);
+  const prov = Number(v.slice(0, 2));
+  const num = Number(v.slice(2, 10));
+  // Short numbers (< 10^7) are not concatenated with the province.
+  const base = num < 1e7 ? num + prov * 1e7 : Number(v.slice(0, 10));
+  return base % 97 === Number(v.slice(10));
+}
 
 const UP = "[A-ZÁÉÍÓÚÑ]";
 
@@ -96,16 +159,27 @@ const DIRECCION_RE = new RegExp(
   "gu",
 );
 
-type Rule = [Category, RegExp];
+// Optional check: a match that fails it is left as is.
+type Rule = [Category, RegExp, ((m: string) => boolean)?];
 
 // Before the model: the model already sees the placeholders.
+// URL before email (mailto, query strings); accounts before cards; ids before phones.
 const FIXED_RULES: Rule[] = [
+  ["URL", URL_RE],
   ["EMAIL", EMAIL_RE],
+  ["IP", IP_RE],
   ["DNI", DNI_RE],
+  ["CIF", CIF_RE, validCif],
+  ["PASAPORTE", PASAPORTE_RE],
   ["CUENTA", IBAN_RE],
   ["CUENTA", CCC_RE],
+  ["TARJETA", TARJETA_RE, luhn],
+  ["NSS", NSS_RE, validNss],
+  ["FECHA", FECHA_RE],
+  ["MATRICULA", MATRICULA_RE],
   ["IMPORTE", IMPORTE_RE],
   ["TELEFONO", TELEFONO_RE],
+  ["TELEFONO", TELEFONO_INTL_RE],
 ];
 
 // After the model: it sets entity bounds first, regex catches what it missed.
@@ -118,7 +192,8 @@ const FALLBACK_RULES: Rule[] = [
 export function normalize(category: Category, value: string) {
   const v = value.trim();
   if (category === "EMAIL") return v.toLowerCase();
-  if (category === "TELEFONO" || category === "DNI" || category === "CUENTA") return v.replace(/[\s\-]/g, "").toUpperCase();
+  if (["TELEFONO", "DNI", "CIF", "NSS", "PASAPORTE", "CUENTA", "TARJETA", "MATRICULA"].includes(category))
+    return v.replace(/[\s\-/]/g, "").toUpperCase();
   if (category === "IMPORTE") return v.replace(/\s/g, "");
   return v.replace(/\s+/g, " ").toLowerCase();
 }
@@ -147,7 +222,10 @@ function createMapper(never: string[] = []) {
   };
 
   const applyRegex = (text: string, rules: Rule[]) =>
-    rules.reduce((t, [category, re]) => t.replace(re, (m) => placeholderFor(category, m)), text);
+    rules.reduce(
+      (t, [category, re, valid]) => t.replace(re, (m) => (valid && !valid(m) ? m : placeholderFor(category, m))),
+      text,
+    );
 
   // Longest first so overlapping entities don't break; whole words only.
   const applyEntities = (text: string, category: Category, values: string[]) => {

@@ -75,7 +75,7 @@ test("carga el modelo al abrir y muestra solo el resultado tras anonimizar", asy
 
 test("todas las categorías activas por defecto; desactivadas no se tapan", async () => {
   await mount();
-  expect(button(/Categorías/).textContent).toContain("8/8");
+  expect(button(/Categorías/).textContent).toContain("16/16");
   fireEvent.click(button(/Categorías/));
   expect(screen.getByRole("dialog")).toBeTruthy();
 
@@ -83,10 +83,10 @@ test("todas las categorías activas por defecto; desactivadas no se tapan", asyn
   for (const c of ["Personas", "Importes", "Cuentas"]) expect(box(c).checked).toBe(true);
   for (const c of ["Personas", "Empresas", "Direcciones", "Teléfonos"]) fireEvent.click(box(c));
   expect(box("Personas").checked).toBe(false);
-  expect(button(/Categorías/).textContent).toContain("4/8");
+  expect(button(/Categorías/).textContent).toContain("12/16");
 
   fireEvent.click(button("Ninguna"));
-  expect(button(/Categorías/).textContent).toContain("0/8");
+  expect(button(/Categorías/).textContent).toContain("0/16");
   fireEvent.click(button("Todas"));
   for (const c of ["Personas", "Empresas", "Direcciones", "Teléfonos"]) fireEvent.click(box(c));
   fireEvent.click(button("Listo"));
