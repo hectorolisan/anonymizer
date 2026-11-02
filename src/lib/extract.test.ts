@@ -11,7 +11,7 @@ const { window } = new JSDOM();
 vi.stubGlobal("DOMParser", window.DOMParser);
 vi.stubGlobal("Node", window.Node);
 
-const { extractText } = await import("./extract");
+const { extractText, MAX_MB } = await import("./extract");
 
 const file = (name: string, content: string | ArrayBuffer = "") => new File([content], name);
 
@@ -19,6 +19,12 @@ test("lee .txt, .md y .csv tal cual (sin espacios sobrantes)", async () => {
   await expect(extractText(file("nota.TXT", "  hola\n"))).resolves.toBe("hola");
   await expect(extractText(file("a.md", "# Título"))).resolves.toBe("# Título");
   await expect(extractText(file("clientes.csv", "nombre;email\nAna;ana@b.es\n"))).resolves.toBe("nombre;email\nAna;ana@b.es");
+});
+
+test("rechaza archivos de más de MAX_MB antes de leerlos", async () => {
+  const big = file("enorme.txt", "x".repeat(MAX_MB * 1024 * 1024 + 1));
+  await expect(extractText(big)).rejects.toThrow(`el máximo es ${MAX_MB} MB`);
+  await expect(extractText(file("justo.txt", "x".repeat(MAX_MB * 1024 * 1024)))).resolves.toHaveLength(MAX_MB * 1024 * 1024);
 });
 
 test("extrae .odt: párrafos, títulos, espacios y saltos", async () => {

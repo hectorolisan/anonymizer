@@ -52,6 +52,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 │   ├── components/
 │   │   ├── anonymizer-app.tsx      # Header, input, result and layout
 │   │   ├── category-filter.tsx     # Filter button + categories dialog
+│   │   ├── file-info.tsx           # Accepted formats + size limit popover
 │   │   ├── credit.tsx              # Footer credit
 │   │   ├── mapping-table.tsx       # Placeholder → original table
 │   │   ├── model-status.tsx        # Model selector + WebGPU/loading status

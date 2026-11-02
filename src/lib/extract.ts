@@ -1,10 +1,24 @@
 // Text extraction in the browser: the file never leaves the tab. No OCR.
 
+export const FORMATS = [
+  { ext: ".txt, .md, .csv", label: "Texto plano" },
+  { ext: ".docx", label: "Word" },
+  { ext: ".odt", label: "LibreOffice / OpenDocument" },
+  { ext: ".pdf", label: "Con texto seleccionable (sin OCR)" },
+];
+
 export const ACCEPT = ".txt,.md,.csv,.docx,.odt,.pdf";
+
+// The model reads ~2000 chars per call: bigger files mean very long runs in the browser.
+export const MAX_MB = 5;
 
 export class ExtractionError extends Error {}
 
 export async function extractText(file: File): Promise<string> {
+  if (file.size > MAX_MB * 1024 * 1024)
+    throw new ExtractionError(
+      `El archivo pesa ${(file.size / 1024 / 1024).toFixed(1)} MB y el máximo es ${MAX_MB} MB.`,
+    );
   const name = file.name.toLowerCase();
   let text: string;
   if ([".txt", ".md", ".csv"].some((ext) => name.endsWith(ext))) text = await file.text();

@@ -11,6 +11,7 @@ import { ACCEPT, ExtractionError, extractText } from "@/lib/extract";
 import { labelClass } from "@/lib/utils";
 import { CategoryFilter } from "./category-filter";
 import { Credit } from "./credit";
+import { FileInfo } from "./file-info";
 import { MappingTable } from "./mapping-table";
 import { ModelStatus } from "./model-status";
 import { ThemeControls } from "./theme-controls";
@@ -148,14 +149,17 @@ export function AnonymizerApp() {
               <h2 id="input-title" className={labelClass}>
                 Texto original
               </h2>
-              <button
-                type="button"
-                onClick={() => fileInput.current?.click()}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <FileUp className="size-3.5" aria-hidden />
-                Abrir archivo
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <FileUp className="size-3.5" aria-hidden />
+                  Abrir archivo
+                </button>
+                <FileInfo />
+              </div>
               <input
                 ref={fileInput}
                 type="file"
