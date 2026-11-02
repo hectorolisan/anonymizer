@@ -30,7 +30,7 @@ export function CategoryFilter({ value, onChange }: Props) {
         aria-labelledby="categories-title"
         // Click on the backdrop closes.
         onClick={(e) => e.target === e.currentTarget && e.currentTarget.close()}
-        className="card m-auto w-[min(34rem,calc(100%-2rem))] p-0 text-foreground backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+        className="card m-auto w-[min(52rem,calc(100%-2rem))] p-0 text-foreground backdrop:bg-black/50 backdrop:backdrop-blur-sm"
       >
         <div className="flex items-start gap-3 p-6 pb-4">
           <div className="mr-auto">
@@ -49,7 +49,7 @@ export function CategoryFilter({ value, onChange }: Props) {
           </button>
         </div>
 
-        <fieldset className="grid gap-1 px-4 sm:grid-cols-2">
+        <fieldset className="grid gap-1 px-4 sm:grid-cols-2 md:grid-cols-3">
           <legend className="sr-only">Categorías a anonimizar</legend>
           {CATEGORIES.map((c) => (
             <label key={c} className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2.5 hover:bg-muted">

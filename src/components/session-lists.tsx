@@ -115,7 +115,7 @@ export function SessionLists({ value, onChange }: Props) {
                 aria-label="Categoría"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as Category)}
-                className="h-9 rounded-lg border bg-card px-2 text-sm"
+                className="select"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>

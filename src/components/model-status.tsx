@@ -60,7 +60,7 @@ export function ModelStatus({ webgpu, model, ready, phase, progress, onModel, on
           anchorUnder(trigger.current, e.currentTarget, "left");
           void refresh();
         }}
-        className="card absolute inset-auto m-0 w-72 p-1 text-foreground"
+        className="card absolute inset-auto m-0 w-80 p-1 text-foreground"
       >
         {MODELS.map((m) => (
           <div key={m.model_id} className="flex items-center gap-1">
@@ -71,7 +71,7 @@ export function ModelStatus({ webgpu, model, ready, phase, progress, onModel, on
                 onModel(m.model_id);
                 list.current?.hidePopover();
               }}
-              className="group flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none aria-pressed:text-primary"
+              className="group flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none aria-pressed:text-primary"
             >
               <span className="font-medium">{modelName(m.model_id)}</span>
               <span className="font-mono text-xs text-muted-foreground">{gb(m.vram_required_MB)}</span>

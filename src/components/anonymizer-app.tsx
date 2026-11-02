@@ -198,7 +198,7 @@ export function AnonymizerApp() {
                   aria-label="Categoría de la selección"
                   value={selCategory}
                   onChange={(e) => setSelCategory(e.target.value as Category)}
-                  className="h-8 rounded-lg border bg-card px-2 text-sm"
+                  className="select h-8"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
