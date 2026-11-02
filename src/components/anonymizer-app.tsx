@@ -10,8 +10,10 @@ import {
   CATEGORY_LABELS,
   DEFAULT_CATEGORIES,
   hide,
+  pseudonyms,
   revert,
   segments,
+  withPseudonyms,
   type Category,
   type Lists,
 } from "@/lib/anonymize";
@@ -52,9 +54,12 @@ export function AnonymizerApp() {
   const [lists, setLists] = useState<Lists>({ always: [], never: [] });
   const [selection, setSelection] = useState("");
   const [selCategory, setSelCategory] = useState<Category>("PERSONA");
+  const [pseudo, setPseudo] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const busy = a.phase !== "idle";
   const result = showResult ? a.result : null;
+  const fakes = result && pseudo ? pseudonyms(result) : {};
+  const output = result ? withPseudonyms(result.anonymized, fakes) : "";
   // Model download, then one step per chunk the model reads.
   const fraction = a.phase === "loading" ? a.progress : a.chunks ? a.chunks.done / a.chunks.total : null;
 
@@ -143,10 +148,24 @@ export function AnonymizerApp() {
               <h2 id="result-title" className={labelClass}>
                 Anonimizado
               </h2>
-              <span className="font-mono text-xs text-muted-foreground">
-                {result.mapping.length ? `${result.mapping.length} datos` : "Sin datos sensibles"} ·{" "}
-                {(result.ms / 1000).toFixed(1)} s
-              </span>
+              <div className="flex items-center gap-4">
+                <label
+                  title="Nombres y empresas ficticios en lugar de marcadores"
+                  className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-muted-foreground"
+                >
+                  <input
+                    type="checkbox"
+                    checked={pseudo}
+                    onChange={(e) => setPseudo(e.target.checked)}
+                    className="size-3.5 cursor-pointer accent-primary"
+                  />
+                  Pseudónimos
+                </label>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {result.mapping.length ? `${result.mapping.length} datos` : "Sin datos sensibles"} ·{" "}
+                  {(result.ms / 1000).toFixed(1)} s
+                </span>
+              </div>
             </div>
             <div
               data-testid="output"
@@ -155,7 +174,7 @@ export function AnonymizerApp() {
               onKeyUp={() => setSelection(window.getSelection()?.toString().trim() ?? "")}
             >
               {segments(result.anonymized, result.mapping).map((s, i) =>
-                typeof s === "string" ? s : <Placeholder key={i} item={s} />,
+                typeof s === "string" ? s : <Placeholder key={i} item={s} label={fakes[s.placeholder]} />,
               )}
             </div>
             {selection.length >= 2 && !selection.includes("[") && (
@@ -200,11 +219,11 @@ export function AnonymizerApp() {
                   Nuevo texto
                 </button>
                 <DownloadMenu
-                  text={result.anonymized}
+                  text={output}
                   base={fileName ? `${fileName}-anonimizado` : "anonimizado"}
                   className={ghostBtn}
                 />
-                <CopyButton text={result.anonymized} className={primaryBtn} />
+                <CopyButton text={output} className={primaryBtn} />
               </div>
             </div>
           </section>
@@ -317,8 +336,8 @@ export function AnonymizerApp() {
         <NoticeBox notice={a.error ? { kind: "error", text: a.error } : null} />
         {result && result.mapping.length > 0 && (
           <>
-            <MappingTable mapping={result.mapping} onRevert={(m) => revertItem(m.placeholder, m.original)} />
-            <RestorePanel mapping={result.mapping} />
+            <MappingTable mapping={result.mapping} fakes={fakes} onRevert={(m) => revertItem(m.placeholder, m.original)} />
+            <RestorePanel mapping={result.mapping} fakes={fakes} />
           </>
         )}
       </main>

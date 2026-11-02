@@ -65,6 +65,10 @@ Patterns that span files:
   entity always gets the same placeholder. `segments()` highlights only placeholders present in the
   mapping (not ones typed in the original). The mapping is the only way back from a placeholder
   to its real value: the table and `restore()` (Restaurar respuesta panel, for the AI's reply).
+- **Names and pseudonyms**: `nameVariants()` gives short forms of each person the model found
+  ("Ana Pérez", "Sra. Pérez García"…) the same placeholder, dropping forms two people share.
+  `pseudonyms()` swaps PERSONA/EMPRESA placeholders for fictitious values only at display/copy time
+  (`withPseudonyms()`); `restore()` takes the same map back. Never pick a fake present in the text.
 - **Manual fixes**: `revert()` (table row) and `hide()` (text selected in the result) edit the result
   through `useAnonymizer().edit`, and also feed the session `Lists` (`always` before the model,
   `never` checked in `placeholderFor`), kept only in React state like the mapping.

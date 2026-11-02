@@ -7,9 +7,9 @@ import { CopyButton } from "./ui";
 
 const area = "min-h-32 w-full rounded-lg border bg-transparent px-3 py-2 text-sm leading-7";
 
-export function RestorePanel({ mapping }: { mapping: MappingItem[] }) {
+export function RestorePanel({ mapping, fakes }: { mapping: MappingItem[]; fakes: Record<string, string> }) {
   const [reply, setReply] = useState("");
-  const restored = restore(reply, mapping);
+  const restored = restore(reply, mapping, fakes);
 
   return (
     <section aria-labelledby="restore-title" className="card px-5 py-4">

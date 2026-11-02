@@ -171,6 +171,15 @@ test("correcciones manuales: revertir, ocultar selección y listas de sesión", 
   expect(screen.getByTestId("output").textContent).toBe("Ana Pérez [EMPRESA_1] desde [EMAIL_1]");
 });
 
+test("pseudónimos en el resultado y de vuelta en Restaurar respuesta", async () => {
+  await mount();
+  await run("Ana Pérez escribe desde ana@ejemplo.com");
+  fireEvent.click(screen.getByRole("checkbox", { name: "Pseudónimos" }));
+  expect(screen.getByTestId("output").textContent).toBe("Laura Ferrer escribe desde [EMAIL_1]");
+  fireEvent.change(screen.getByLabelText("Respuesta de la IA"), { target: { value: "Hola Laura Ferrer" } });
+  expect(screen.getByTestId("restored").textContent).toBe("Hola Ana Pérez");
+});
+
 test("Nuevo texto vuelve al editor vacío", async () => {
   await mount();
   await run("ana@ejemplo.com");

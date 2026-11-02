@@ -5,16 +5,19 @@ import {
   CancelledError,
   chunk,
   DEFAULT_CATEGORIES,
+  nameVariants,
   needsModel,
   normalize,
   hide,
   luhn,
   parseEntities,
+  pseudonyms,
   restore,
   revert,
   segments,
   validCif,
   validNss,
+  withPseudonyms,
   type Category,
   type Entities,
 } from "./anonymize";
@@ -244,5 +247,36 @@ describe("correcciones", () => {
     expect(r.mapping.map((m) => m.original)).toEqual(["Luis", "Ana"]);
     const same = { anonymized: "hola", mapping: [] };
     expect(hide(same, "adiós", "PERSONA")).toBe(same);
+  });
+});
+
+describe("variantes y pseudónimos", () => {
+  it("formas cortas de un nombre comparten marcador; las ambiguas no", async () => {
+    const text = "Ana Pérez García y Luis Pérez García firman. La Sra. Pérez García paga; Ana Pérez cobra. Pérez García.";
+    const { anonymized } = await anonymize(
+      text,
+      only("PERSONA"),
+      extractor({ personas: ["Ana Pérez García", "Luis Pérez García"] }),
+    );
+    expect(anonymized).toBe("[PERSONA_1] y [PERSONA_2] firman. La Sra. Pérez García paga; [PERSONA_1] cobra. Pérez García.");
+    expect(nameVariants(["Luis Martín"]).map(([v]) => v)).toContain("Sr. Martín");
+  });
+
+  it("pseudónimos evitan valores del texto y restore los deshace", () => {
+    const r = {
+      anonymized: "[PERSONA_1] habla con Laura Ferrer de [EMPRESA_1] y [EMAIL_1].",
+      mapping: [
+        { placeholder: "[PERSONA_1]", original: "Ana", category: "PERSONA" as const },
+        { placeholder: "[EMPRESA_1]", original: "Talleres S.L.", category: "EMPRESA" as const },
+        { placeholder: "[EMAIL_1]", original: "a@b.es", category: "EMAIL" as const },
+      ],
+    };
+    const fakes = pseudonyms(r);
+    expect(fakes).toEqual({ "[PERSONA_1]": "Diego Navarro", "[EMPRESA_1]": "Alfa Servicios S.L." });
+    const text = withPseudonyms(r.anonymized, fakes);
+    expect(text).toBe("Diego Navarro habla con Laura Ferrer de Alfa Servicios S.L. y [EMAIL_1].");
+    expect(restore(`Hola Diego Navarro, de Alfa Servicios S.L. (${"[EMAIL_1]"}).`, r.mapping, fakes)).toBe(
+      "Hola Ana, de Talleres S.L. (a@b.es).",
+    );
   });
 });

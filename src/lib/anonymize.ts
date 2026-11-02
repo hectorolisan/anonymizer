@@ -209,7 +209,7 @@ function createMapper(never: string[] = []) {
   const mapping: MappingItem[] = [];
 
   const placeholderFor = (category: Category, original: string) => {
-    if (never.some((t) => normalize(category, t) === normalize(category, original))) return original;
+    if (never.some((t) => normalize(category, t) === normalize(category, original))) return null;
     const key = `${category}::${normalize(category, original)}`;
     const existing = byKey.get(key);
     if (existing) return existing;
@@ -223,7 +223,7 @@ function createMapper(never: string[] = []) {
 
   const applyRegex = (text: string, rules: Rule[]) =>
     rules.reduce(
-      (t, [category, re, valid]) => t.replace(re, (m) => (valid && !valid(m) ? m : placeholderFor(category, m))),
+      (t, [category, re, valid]) => t.replace(re, (m) => (valid && !valid(m) ? m : (placeholderFor(category, m) ?? m))),
       text,
     );
 
@@ -231,12 +231,41 @@ function createMapper(never: string[] = []) {
   const applyEntities = (text: string, category: Category, values: string[]) => {
     const clean = [...new Set(values.map((v) => v.trim()))].filter((v) => v.length >= 2 && !v.startsWith("["));
     for (const v of clean.sort((a, b) => b.length - a.length)) {
-      text = text.replace(wholeWord(v), () => placeholderFor(category, v));
+      text = text.replace(wholeWord(v), (m) => placeholderFor(category, v) ?? m);
     }
     return text;
   };
 
-  return { mapping, applyRegex, applyEntities };
+  // Shorter forms of a full name share its placeholder.
+  const applyAliases = (text: string, category: Category, aliases: [string, string][]) => {
+    for (const [v, full] of aliases) text = text.replace(wholeWord(v), (m) => placeholderFor(category, full) ?? m);
+    return text;
+  };
+
+  return { mapping, applyRegex, applyEntities, applyAliases };
+}
+
+const TITLES = ["Sr.", "Sra.", "Srta.", "D.", "Dña.", "Don", "Doña"];
+
+// "Ana Pérez García" -> "Ana Pérez", "Pérez García", "Sra. Pérez"… Forms shared by two people are dropped.
+export function nameVariants(names: string[]): [string, string][] {
+  const full = [...new Set(names.map((n) => n.trim().replace(/\s+/g, " ")))];
+  const fullKeys = new Set(full.map((n) => normalize("PERSONA", n)));
+  const found = new Map<string, [string, string] | null>();
+  for (const n of full) {
+    const w = n.split(" ");
+    if (w.length < 2) continue;
+    const surnames = w.length >= 3 ? [w.slice(1).join(" "), w[1]] : [w[1]];
+    const forms = surnames.flatMap((s) => TITLES.map((t) => `${t} ${s}`));
+    if (w.length >= 3) forms.push(`${w[0]} ${w[1]}`, w.slice(1).join(" "));
+    for (const f of forms) {
+      const k = normalize("PERSONA", f);
+      if (fullKeys.has(k)) continue;
+      const prev = found.get(k);
+      found.set(k, prev === undefined || prev?.[1] === n ? [f, n] : null);
+    }
+  }
+  return [...found.values()].filter((v) => v !== null).sort((a, b) => b[0].length - a[0].length);
 }
 
 export async function anonymize(text: string, categories: Iterable<Category>, extract: Extractor, options: Options = {}) {
@@ -262,7 +291,10 @@ export async function anonymize(text: string, categories: Iterable<Category>, ex
       all.empresas.push(...e.empresas);
       all.direcciones.push(...e.direcciones);
     }
-    if (active.has("PERSONA")) text = m.applyEntities(text, "PERSONA", all.personas);
+    if (active.has("PERSONA")) {
+      text = m.applyEntities(text, "PERSONA", all.personas);
+      text = m.applyAliases(text, "PERSONA", nameVariants(all.personas));
+    }
     if (active.has("EMPRESA")) text = m.applyEntities(text, "EMPRESA", all.empresas);
     if (active.has("DIRECCION")) text = m.applyEntities(text, "DIRECCION", all.direcciones);
   }
@@ -308,11 +340,47 @@ function renumber(text: string, mapping: MappingItem[]): Anonymized {
   };
 }
 
-// Back from the AI's reply: placeholders in the mapping -> real values. Models sometimes lowercase them.
-export function restore(text: string, mapping: MappingItem[]) {
+// Back from the AI's reply: placeholders (and pseudonyms) in the mapping -> real values. Models sometimes lowercase placeholders.
+export function restore(text: string, mapping: MappingItem[], fakes: Record<string, string> = {}) {
   const map = new Map(mapping.map((m) => [m.placeholder, m.original]));
+  for (const [p, fake] of Object.entries(fakes).sort((a, b) => b[1].length - a[1].length)) {
+    const original = map.get(p);
+    if (original) text = text.replace(wholeWord(fake), () => original);
+  }
   return text.replace(/\[([A-Za-z]+_\d+)\]/g, (p, id: string) => map.get(`[${id.toUpperCase()}]`) ?? p);
 }
+
+const FAKES: Partial<Record<Category, string[]>> = {
+  PERSONA: [
+    "Laura Ferrer", "Diego Navarro", "Irene Campos", "Hugo Vidal", "Nuria Prieto", "Óscar Molina", "Clara Ibáñez",
+    "Raúl Cortés", "Alba Serrano", "Marcos Lozano", "Celia Rubio", "Iván Garrido", "Rocío Pastor", "Adrián Santos",
+    "Eva Gallardo", "Jorge Castillo", "Inés Romero", "Samuel Vega", "Paula Herrera", "Gonzalo Peña",
+  ],
+  EMPRESA: [
+    "Alfa Servicios S.L.", "Beta Logística S.A.", "Gamma Consultores S.L.", "Delta Comercial S.L.",
+    "Épsilon Industrial S.A.", "Zeta Distribución S.L.", "Eta Ingeniería S.L.", "Theta Soluciones S.A.",
+  ],
+};
+const FAKE_FALLBACK: Partial<Record<Category, string>> = { PERSONA: "Persona", EMPRESA: "Empresa" };
+
+// Realistic stand-ins for people and companies, so the cloud AI reads natural text.
+// Never a value already present in the text or the mapping, or restore() would be ambiguous.
+export function pseudonyms(r: Anonymized) {
+  const haystack = [r.anonymized, ...r.mapping.map((m) => m.original)].join("\n").toLowerCase();
+  const used = new Map<Category, number>();
+  const out: Record<string, string> = {};
+  for (const m of r.mapping) {
+    const pool = FAKES[m.category]?.filter((f) => !haystack.includes(f.toLowerCase()));
+    if (!pool) continue;
+    const i = used.get(m.category) ?? 0;
+    used.set(m.category, i + 1);
+    out[m.placeholder] = pool[i] ?? `${FAKE_FALLBACK[m.category]} ${i + 1}`;
+  }
+  return out;
+}
+
+export const withPseudonyms = (text: string, fakes: Record<string, string>) =>
+  text.replace(PLACEHOLDER_RE, (p) => fakes[p] ?? p);
 
 export type Segment = string | MappingItem;
 

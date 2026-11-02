@@ -15,8 +15,9 @@ export function anchorUnder(trigger: HTMLElement | null, popover: HTMLElement, a
   s.minWidth = `${r.width}px`;
 }
 
-export function Placeholder({ item }: { item: MappingItem }) {
-  return <mark className="ph">{item.placeholder}</mark>;
+// `label`: pseudonym shown instead of the placeholder.
+export function Placeholder({ item, label }: { item: MappingItem; label?: string }) {
+  return <mark className="ph">{label ?? item.placeholder}</mark>;
 }
 
 export function CopyButton({ text, className, label = "Copiar" }: { text: string; className: string; label?: string }) {
