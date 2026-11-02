@@ -31,7 +31,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 - The same entity always gets the **same placeholder**.
 - A filter dialog with checkboxes chooses **which categories** to anonymize (all on by default).
 - After anonymizing only the result is shown, with the placeholder → value map below; it lives **only in the tab**.
-- Models: Qwen3 1.7B, Qwen3 4B (default), Llama 3.2 3B and Gemma 4 E2B, loaded on start and cached by the browser.
+- Models: Qwen3 4B (default), Llama 3.2 3B and Gemma 4 E2B, loaded on start and cached by the browser.
 
 ## Project Structure
 

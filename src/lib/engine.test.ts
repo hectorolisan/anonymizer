@@ -27,7 +27,7 @@ const reply = (content: string) => ({ choices: [{ message: { content } }] });
 beforeEach(() => vi.clearAllMocks());
 
 test("every curated model exists in prebuiltAppConfig", () => {
-  expect(engine.MODELS).toHaveLength(4);
+  expect(engine.MODELS).toHaveLength(3);
   expect(engine.MODELS.map((m) => m.model_id)).toContain(engine.DEFAULT_MODEL);
 });
 

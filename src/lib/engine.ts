@@ -8,9 +8,9 @@ import {
 } from "@mlc-ai/web-llm";
 import { AnonymizeError, buildPrompt, ENTITIES_SCHEMA, parseEntities, type Entities } from "./anonymize";
 
-// Qwen3-4B matches the reference (qwen3:4b on Ollama); the rest are lighter or alternative families.
+// Checked with `pnpm test-files` samples (contract + CSV) on an Intel iGPU: all entities found.
+// Qwen3-4B matches the reference (qwen3:4b on Ollama). Dropped: Qwen3-1.7B (misses every person).
 const MODEL_IDS = [
-  "Qwen3-1.7B-q4f16_1-MLC",
   "Qwen3-4B-q4f16_1-MLC",
   "Llama-3.2-3B-Instruct-q4f16_1-MLC",
   "gemma-4-E2B-it-q4f16_1-MLC",

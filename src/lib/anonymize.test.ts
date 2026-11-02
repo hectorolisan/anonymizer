@@ -24,9 +24,32 @@ describe("regex", () => {
     expect(anonymized).toBe(
       "Escribe a [EMAIL_1] o llama al [TELEFONO_1]. DNI [DNI_1], NIE [DNI_2]. IBAN [CUENTA_1].",
     );
+    // Mapping follows the order of appearance in the text.
     expect(mapping.map((m) => m.original)).toEqual([
-      "ana@ejemplo.com", "45.812.339-K", "X1234567L", "ES91 2100 0418 4502 0005 1332", "+34 612 345 678",
+      "ana@ejemplo.com", "+34 612 345 678", "45.812.339-K", "X1234567L", "ES91 2100 0418 4502 0005 1332",
     ]);
+  });
+
+  it("numera por orden de aparición aunque el modelo devuelva otro orden", async () => {
+    const { anonymized, mapping } = await anonymize(
+      "Firman Luis Martín y Ana Pérez García. Luis Martín paga.",
+      only("PERSONA"),
+      extractor({ personas: ["Ana Pérez García", "Luis Martín"] }),
+    );
+    expect(anonymized).toBe("Firman [PERSONA_1] y [PERSONA_2]. [PERSONA_1] paga.");
+    expect(mapping.map((m) => [m.placeholder, m.original])).toEqual([
+      ["[PERSONA_1]", "Luis Martín"],
+      ["[PERSONA_2]", "Ana Pérez García"],
+    ]);
+  });
+
+  it("respaldo de direcciones en CSV: no se come las comillas ni corta palabras", async () => {
+    const { anonymized } = await anonymize(
+      '"Ana","Avenida de Canarias 2, 2º izq, 35002 Las Palmas de Gran Canaria","ES91"\n"Luis","Calle Goya 1, 1º izq, 28001 Madrid","x"',
+      only("DIRECCION"),
+      extractor(),
+    );
+    expect(anonymized).toBe('"Ana","[DIRECCION_1]","ES91"\n"Luis","[DIRECCION_2]","x"');
   });
 
   it("cuenta de 20 dígitos e importes", async () => {

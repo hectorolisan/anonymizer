@@ -76,10 +76,12 @@ const VIA = String.raw`(?:C/|Calle|Avda\.?|Avenida|Av\.|Plaza|Pza\.?|Pl\.|Paseo|
 const NAME_WORD = `${UP}[A-Za-zÁÉÍÓÚÑáéíóúñ'’\\-]*`;
 const VIA_NOMBRE = String.raw`(?:(?:de|del|la|las|los|y)\s+){0,2}${NAME_WORD}(?:\s+(?:de|del|la|las|los|y|${NAME_WORD})){0,4}`;
 // Details must look like an address (digit, capital or floor word) to not swallow prose.
-const VIA_DETALLE = String.raw`(?:\s*,\s*(?:\d[^,\n.]{0,30}|${UP}[^,\n.]{0,30}|(?:bajo|ático|entresuelo|principal|izquierda|derecha|izq|dcha|planta|puerta|piso|esc|pta)[^,\n.]{0,30})){0,3}`;
+// No quotes or cell separators (CSV) and never stop mid-word ("Gran Canari|a").
+const DETALLE = String.raw`[^,\n.";|\t]{0,60}(?<!\s)(?![\p{L}\p{N}])`;
+const VIA_DETALLE = String.raw`(?:\s*,\s*(?:\d${DETALLE}|${UP}${DETALLE}|(?:bajo|ático|entresuelo|principal|izquierda|derecha|izq|dcha|planta|puerta|piso|esc|pta)${DETALLE})){0,3}`;
 const DIRECCION_RE = new RegExp(
   String.raw`${VIA}\s+${VIA_NOMBRE},?\s+(?:n[.ºo]?\s*)?\d{1,4}(?:\s?bis)?[A-Za-zºª]?${VIA_DETALLE}`,
-  "g",
+  "gu",
 );
 
 type Rule = [Category, RegExp];
@@ -166,10 +168,28 @@ export async function anonymize(text: string, categories: Iterable<Category>, ex
   }
 
   text = m.applyRegex(text, FALLBACK_RULES.filter(([c]) => active.has(c)));
-  return { anonymized: text, mapping: m.mapping };
+  return renumber(text, m.mapping);
 }
 
 const PLACEHOLDER_RE = /\[([A-Z]+)_\d+\]/g;
+
+// Rules run by category and longest value first; renumber by first appearance so [PERSONA_1] is the first person.
+function renumber(text: string, mapping: MappingItem[]) {
+  const byOld = new Map(mapping.map((m) => [m.placeholder, m]));
+  const counters = new Map<Category, number>();
+  const next = new Map<string, MappingItem>();
+  for (const [p] of text.matchAll(PLACEHOLDER_RE)) {
+    const m = byOld.get(p);
+    if (!m || next.has(p)) continue;
+    const n = (counters.get(m.category) ?? 0) + 1;
+    counters.set(m.category, n);
+    next.set(p, { ...m, placeholder: `[${m.category}_${n}]` });
+  }
+  return {
+    anonymized: text.replace(PLACEHOLDER_RE, (p) => next.get(p)?.placeholder ?? p),
+    mapping: [...next.values()],
+  };
+}
 
 export type Segment = string | MappingItem;
 

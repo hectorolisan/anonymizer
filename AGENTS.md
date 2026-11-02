@@ -59,7 +59,7 @@ Patterns that span files:
   ~2000 chars because the context window is 4096 tokens; 3) `FALLBACK_RULES` regex (companies with
   legal form, street + number) for what the model missed. Model values are replaced longest first,
   whole words only, and ignored if not literally in the text (hallucinations).
-- **Placeholders**: `[CATEGORY_N]`, numbered per category; `normalize()` is the dedup key so the same
+- **Placeholders**: `[CATEGORY_N]`, numbered per category by first appearance (`renumber()` runs last); `normalize()` is the dedup key so the same
   entity always gets the same placeholder. `segments()` highlights only placeholders present in the
   mapping (not ones typed in the original). The mapping table is the only way back from a
   placeholder to its real value.
@@ -68,6 +68,8 @@ Patterns that span files:
   uses `response_format: json_object` with `ENTITIES_SCHEMA`, `temperature: 0`, Qwen3 thinking off,
   then `parseEntities()` validates; one retry, then an `AnonymizeError` — never a half-anonymised
   text. `MODEL_IDS` must be exact ids from WebLLM's `prebuiltAppConfig` (unknown ids are dropped).
+  Before adding a model, run the `pnpm test-files` samples (`muestra.txt`, `muestra.csv`) through it: every
+  person, company and address must be found (Qwen3-1.7B was dropped for missing all persons).
   `use-anonymizer.ts` loads the selected model on mount and whenever it changes (no download button).
 - **Errors**: `AnonymizeError` / `ExtractionError` messages are user-facing Spanish; anything else is
   wrapped as a generic browser error in `use-anonymizer.ts`. Without WebGPU the regex-only
