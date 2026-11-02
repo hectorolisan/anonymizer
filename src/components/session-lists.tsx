@@ -74,7 +74,7 @@ export function SessionLists({ value, onChange }: Props) {
       >
         <div className="flex items-start gap-3 p-6 pb-2">
           <div className="mr-auto">
-            <p className={labelClass}>Solo en esta pestaña</p>
+            <p className={labelClass}>Reglas propias</p>
             <h2 id="lists-title" className="mt-1 text-2xl">
               Listas
             </h2>
