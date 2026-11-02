@@ -1,26 +1,100 @@
-@import "tailwindcss";
+@import "tailwindcss" theme(static);
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* --primary-* los fija lib/theme.ts según el color elegido; fallback teal */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: var(--color-neutral-50);
+  --foreground: var(--color-neutral-950);
+  --card: var(--color-white);
+  --muted: var(--color-neutral-100);
+  --muted-foreground: var(--color-neutral-500);
+  --border: var(--color-neutral-200);
+  --primary: var(--primary-light, var(--color-teal-600));
+  --primary-foreground: var(--primary-fg-light, var(--color-white));
+  --good: #006300;
+  --bad: #d03b3b;
+  --warn: #a35f00;
+
+  /* paleta categórica validada (CVD), un color por categoría */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --series-8: #e34948;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: var(--color-neutral-950);
+  --foreground: var(--color-neutral-50);
+  --card: var(--color-neutral-900);
+  --muted: var(--color-neutral-800);
+  --muted-foreground: var(--color-neutral-400);
+  --border: rgb(255 255 255 / 0.1);
+  --primary: var(--primary-dark, var(--color-teal-500));
+  --primary-foreground: var(--primary-fg-dark, var(--color-teal-950));
+  --good: #0ca30c;
+  --bad: #e66767;
+  --warn: #e0a030;
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --color-warn: var(--warn);
+  --font-sans: "Poppins", system-ui, sans-serif;
+  --font-heading: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@utility card {
+  @apply rounded-xl border bg-card shadow-xs;
+}
+
+/* marcador [CATEGORIA_N]: --c lo pone el componente según la categoría */
+@utility ph {
+  @apply rounded-md px-1 py-px font-mono text-[0.9em] font-medium whitespace-nowrap;
+  color: var(--c);
+  background: color-mix(in oklab, var(--c) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c) 35%, transparent);
+}
+
+@layer base {
+  * {
+    @apply border-border;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Tailwind 4 deja cursor: default en botones */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-heading font-extrabold tracking-[-0.01em] leading-[1.1];
+  }
 }
