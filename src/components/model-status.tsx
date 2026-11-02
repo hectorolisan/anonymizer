@@ -100,7 +100,7 @@ export function ModelStatus({ webgpu, model, ready, phase, progress, onModel, on
       </div>
       <span
         role="status"
-        className="inline-flex h-9 min-w-36 items-center gap-2 rounded-lg border bg-card px-3 text-sm whitespace-nowrap text-muted-foreground tabular-nums"
+        className="inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-sm whitespace-nowrap text-muted-foreground tabular-nums"
       >
         <span className={`size-2 rounded-full ${dot}`} aria-hidden />
         {text}
