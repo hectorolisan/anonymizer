@@ -2,6 +2,7 @@
 //   muestra.*  ~1 contract, to try every model quickly
 //   limite.*   just under the 20 MB limit (MAX_MB in src/lib/extract.ts)
 //   excede.txt just over the limit, must be rejected
+//   muestra.esperado.json  persons/companies/addresses in each muestra.*, for /benchmark
 // Usage: pnpm test-files
 import { mkdir, writeFile } from "node:fs/promises";
 import JSZip from "jszip";
@@ -222,6 +223,30 @@ await write("muestra.json", json(1000));
 await write("muestra.docx", await docx(sample));
 await write("muestra.odt", await odt(sample));
 await write("muestra.pdf", pdf(sample));
+
+// Ground truth for /benchmark: contracts name two people, tables only the holder.
+const uniq = (list) => [...new Set(list)];
+function expected(n, withContact) {
+  const rs = Array.from({ length: n }, (_, i) => record(i));
+  return {
+    personas: uniq(rs.flatMap((r) => (withContact ? [r.person, r.contact] : [r.person]))),
+    empresas: uniq(rs.map((r) => r.company)),
+    direcciones: uniq(rs.map((r) => r.address)),
+  };
+}
+const contractTruth = expected(1, true);
+await write(
+  "muestra.esperado.json",
+  JSON.stringify(
+    {
+      ...Object.fromEntries(["txt", "md", "docx", "odt", "pdf"].map((ext) => [`muestra.${ext}`, contractTruth])),
+      "muestra.csv": expected(csv(1000).split("\n").length - 1, false),
+      "muestra.json": expected(json(1000).split("\n").length - 2, false),
+    },
+    null,
+    2,
+  ),
+);
 
 // Rescale the text until the built file lands within 1 % under LIMIT.
 async function fit(build) {

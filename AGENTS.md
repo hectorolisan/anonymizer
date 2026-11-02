@@ -31,7 +31,7 @@ pnpm is the package manager (`pnpm-lock.yaml` is committed; npm/bun also work).
 - `pnpm build` — static export to `./out/`
 - `pnpm lint` — ESLint (`eslint-config-next` core-web-vitals + typescript)
 - `pnpm test` — Vitest (`vitest run`; `vitest.config.mts` only maps the `@/` alias, default env is node)
-- `pnpm test-files` — writes fictitious documents to `./test-files/` (gitignored): `muestra.*` (one contract per format, for trying each model), `limite.*` (just under `MAX_MB`) and `excede.txt` (just over, must be rejected)
+- `pnpm test-files` — writes fictitious documents to `./test-files/` (gitignored): `muestra.*` (one contract per format, for trying each model), `limite.*` (just under `MAX_MB`), `excede.txt` (just over, must be rejected) and `muestra.esperado.json` (ground truth for `/benchmark`)
 
 Deploy: `.github/workflows/deploy.yml` publishes `./out/` to GitHub Pages on every push to `main`
 (lint + test first). `basePath` comes from `PAGES_BASE_PATH` (`/anonymizer` in CI, empty locally), so
@@ -77,8 +77,8 @@ Patterns that span files:
   uses `response_format: json_object` with `ENTITIES_SCHEMA`, `temperature: 0`, Qwen3 thinking off,
   then `parseEntities()` validates; one retry, then an `AnonymizeError` — never a half-anonymised
   text. `MODEL_IDS` must be exact ids from WebLLM's `prebuiltAppConfig` (unknown ids are dropped).
-  Before adding a model, run the `pnpm test-files` samples (`muestra.txt`, `muestra.csv`) through it: every
-  person, company and address must be found (Qwen3-1.7B was dropped for missing all persons).
+  Before adding a model, open `/benchmark` with the `pnpm test-files` samples (`muestra.*` +
+  `muestra.esperado.json`) and run it: every person, company and address must be found (Qwen3-1.7B was dropped for missing all persons).
   `use-anonymizer.ts` loads the selected model on mount and whenever it changes (no download button).
 - **Errors**: Cancel aborts the `AbortSignal` passed to `anonymize()` and calls `interrupt()`; a completion with `finish_reason: "abort"` throws `CancelledError`, which is not shown. `AnonymizeError` / `ExtractionError` messages are user-facing Spanish; anything else is
   wrapped as a generic browser error in `use-anonymizer.ts`. Without WebGPU the regex-only

@@ -99,6 +99,8 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 | `pnpm test`    | Run Vitest                                              |
 | `pnpm test-files` | Generate fictitious test documents in `./test-files/` |
 
+`/benchmark` (not linked from the app) runs each model over the `muestra.*` files and reports which expected persons, companies and addresses were left uncovered.
+
 > You can also use `npm` or `bun` if you prefer.
 
 ---
