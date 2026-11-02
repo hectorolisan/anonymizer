@@ -49,7 +49,10 @@ export class CancelledError extends AnonymizeError {
   }
 }
 
-export type Progress = { signal?: AbortSignal; onChunk?: (done: number, total: number) => void };
+// Session lists: values to always hide (with their category) and values to never hide.
+export type Lists = { always: { value: string; category: Category }[]; never: string[] };
+
+export type Options = { signal?: AbortSignal; onChunk?: (done: number, total: number) => void; lists?: Lists };
 
 // --- Regex, in application order (most specific first) ----------------------
 
@@ -122,12 +125,16 @@ export function normalize(category: Category, value: string) {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-function createMapper() {
+// Whole words only: never inside another word or a placeholder ("[PERSONA_1]").
+const wholeWord = (v: string) => new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRe(v)}(?![\\p{L}\\p{N}_])`, "gu");
+
+function createMapper(never: string[] = []) {
   const counters = new Map<Category, number>();
   const byKey = new Map<string, string>();
   const mapping: MappingItem[] = [];
 
   const placeholderFor = (category: Category, original: string) => {
+    if (never.some((t) => normalize(category, t) === normalize(category, original))) return original;
     const key = `${category}::${normalize(category, original)}`;
     const existing = byKey.get(key);
     if (existing) return existing;
@@ -146,8 +153,7 @@ function createMapper() {
   const applyEntities = (text: string, category: Category, values: string[]) => {
     const clean = [...new Set(values.map((v) => v.trim()))].filter((v) => v.length >= 2 && !v.startsWith("["));
     for (const v of clean.sort((a, b) => b.length - a.length)) {
-      const re = new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRe(v)}(?![\\p{L}\\p{N}_])`, "gu");
-      text = text.replace(re, () => placeholderFor(category, v));
+      text = text.replace(wholeWord(v), () => placeholderFor(category, v));
     }
     return text;
   };
@@ -155,21 +161,25 @@ function createMapper() {
   return { mapping, applyRegex, applyEntities };
 }
 
-export async function anonymize(text: string, categories: Iterable<Category>, extract: Extractor, progress: Progress = {}) {
+export async function anonymize(text: string, categories: Iterable<Category>, extract: Extractor, options: Options = {}) {
+  const { signal, onChunk, lists = { always: [], never: [] } } = options;
   if (!text.trim()) throw new AnonymizeError("No hay texto para anonimizar.");
   const active = new Set(categories);
   if (!active.size) throw new AnonymizeError("Marca al menos una categoría que anonimizar.");
 
-  const m = createMapper();
+  const m = createMapper(lists.never);
   text = m.applyRegex(text, FIXED_RULES.filter(([c]) => active.has(c)));
+  // Before the model, like regex: it already sees them hidden.
+  for (const c of CATEGORIES)
+    text = m.applyEntities(text, c, lists.always.filter((a) => a.category === c).map((a) => a.value));
 
   if (needsModel(active)) {
     const all: Entities = { personas: [], empresas: [], direcciones: [] };
     const parts = chunk(text);
     for (const [i, part] of parts.entries()) {
-      progress.onChunk?.(i, parts.length);
+      onChunk?.(i, parts.length);
       const e = await extract(part);
-      if (progress.signal?.aborted) throw new CancelledError();
+      if (signal?.aborted) throw new CancelledError();
       all.personas.push(...e.personas);
       all.empresas.push(...e.empresas);
       all.direcciones.push(...e.direcciones);
@@ -185,8 +195,25 @@ export async function anonymize(text: string, categories: Iterable<Category>, ex
 
 const PLACEHOLDER_RE = /\[([A-Z]+)_\d+\]/g;
 
+export type Anonymized = { anonymized: string; mapping: MappingItem[] };
+
+// Manual fix of a false positive: the placeholder goes back to its value everywhere.
+export function revert(r: Anonymized, placeholder: string) {
+  const item = r.mapping.find((m) => m.placeholder === placeholder);
+  if (!item) return r;
+  return renumber(r.anonymized.replaceAll(placeholder, item.original), r.mapping.filter((m) => m !== item));
+}
+
+// Manual fix of a miss: hide every whole-word occurrence of `value`.
+export function hide(r: Anonymized, value: string, category: Category) {
+  const v = value.trim();
+  if (v.length < 2 || v.includes("[") || r.anonymized.search(wholeWord(v)) === -1) return r;
+  const placeholder = `[${category}_${r.mapping.length + 1}]`;
+  return renumber(r.anonymized.replace(wholeWord(v), placeholder), [...r.mapping, { placeholder, original: v, category }]);
+}
+
 // Rules run by category and longest value first; renumber by first appearance so [PERSONA_1] is the first person.
-function renumber(text: string, mapping: MappingItem[]) {
+function renumber(text: string, mapping: MappingItem[]): Anonymized {
   const byOld = new Map(mapping.map((m) => [m.placeholder, m]));
   const counters = new Map<Category, number>();
   const next = new Map<string, MappingItem>();

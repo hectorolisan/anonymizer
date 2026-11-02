@@ -61,8 +61,11 @@ Patterns that span files:
   whole words only, and ignored if not literally in the text (hallucinations).
 - **Placeholders**: `[CATEGORY_N]`, numbered per category by first appearance (`renumber()` runs last); `normalize()` is the dedup key so the same
   entity always gets the same placeholder. `segments()` highlights only placeholders present in the
-  mapping (not ones typed in the original). The mapping table is the only way back from a
-  placeholder to its real value.
+  mapping (not ones typed in the original). The mapping is the only way back from a placeholder
+  to its real value: the table and `restore()` (Restaurar respuesta panel, for the AI's reply).
+- **Manual fixes**: `revert()` (table row) and `hide()` (text selected in the result) edit the result
+  through `useAnonymizer().edit`, and also feed the session `Lists` (`always` before the model,
+  `never` checked in `placeholderFor`), kept only in React state like the mapping.
 - **Engine in a Web Worker**: `engine.ts` lazily creates one `WebWorkerMLCEngine` backed by
   `engine.worker.ts`; `loadModel()` is a no-op when the model is already loaded. `extractEntities()`
   uses `response_format: json_object` with `ENTITIES_SCHEMA`, `temperature: 0`, Qwen3 thinking off,

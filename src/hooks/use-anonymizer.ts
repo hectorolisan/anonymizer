@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { anonymize, AnonymizeError, CancelledError, needsModel, type Category, type MappingItem } from "@/lib/anonymize";
+import {
+  anonymize,
+  AnonymizeError,
+  CancelledError,
+  needsModel,
+  type Anonymized,
+  type Category,
+  type Lists,
+} from "@/lib/anonymize";
 import { DEFAULT_MODEL, deleteCached, extractEntities, hasWebGPU, interrupt, loadedModel, loadModel } from "@/lib/engine";
 
 export type Phase = "idle" | "loading" | "running";
-export type Result = { anonymized: string; mapping: MappingItem[]; ms: number };
+export type Result = Anonymized & { ms: number };
 export type Chunks = { done: number; total: number };
 
 const message = (err: unknown) =>
@@ -55,7 +63,7 @@ export function useAnonymizer() {
     void Promise.resolve().then(() => guard(() => ensureModel(model)));
   }, [model]);
 
-  const run = (text: string, categories: Category[]) =>
+  const run = (text: string, categories: Category[], lists?: Lists) =>
     guard(async () => {
       if (text.trim() && categories.length && needsModel(categories)) await ensureModel(model);
       setPhase("running");
@@ -64,6 +72,7 @@ export function useAnonymizer() {
       const r = await anonymize(text, categories, (part) => extractEntities(model, part), {
         signal: abort.current.signal,
         onChunk: (done, total) => setChunks({ done, total }),
+        lists,
       });
       setResult({ ...r, ms: performance.now() - t0 });
     });
@@ -79,10 +88,13 @@ export function useAnonymizer() {
     if (loadedModel() !== ready) setReady(null);
   };
 
+  // Manual fixes on the shown result (revert / hide).
+  const edit = (fn: (r: Anonymized) => Anonymized) => setResult((r) => r && { ...fn(r), ms: r.ms });
+
   const reset = () => {
     setResult(null);
     setError(null);
   };
 
-  return { model, setModel, ready, phase, progress, chunks, result, error, run, cancel, removeCached, reset };
+  return { model, setModel, ready, phase, progress, chunks, result, error, run, cancel, removeCached, edit, reset };
 }

@@ -151,6 +151,26 @@ test("borra de la caché un modelo descargado", async () => {
   expect(screen.getByRole("status").textContent).toContain("Modelo sin cargar");
 });
 
+test("correcciones manuales: revertir, ocultar selección y listas de sesión", async () => {
+  await mount();
+  await run("Ana Pérez escribe desde ana@ejemplo.com");
+
+  fireEvent.click(button("No anonimizar «Ana Pérez»"));
+  expect(screen.getByTestId("output").textContent).toBe("Ana Pérez escribe desde [EMAIL_1]");
+
+  vi.spyOn(window, "getSelection").mockReturnValue({ toString: () => " escribe " } as Selection);
+  fireEvent.mouseUp(screen.getByTestId("output"));
+  fireEvent.change(screen.getByLabelText("Categoría de la selección"), { target: { value: "EMPRESA" } });
+  fireEvent.click(button("Ocultar"));
+  expect(screen.getByTestId("output").textContent).toBe("Ana Pérez [EMPRESA_1] desde [EMAIL_1]");
+
+  // Both fixes are remembered for the next run.
+  fireEvent.click(button("Editar texto"));
+  expect(button(/Listas/).textContent).toContain("2");
+  await act(async () => fireEvent.click(button(/Anonimizar/)));
+  expect(screen.getByTestId("output").textContent).toBe("Ana Pérez [EMPRESA_1] desde [EMAIL_1]");
+});
+
 test("Nuevo texto vuelve al editor vacío", async () => {
   await mount();
   await run("ana@ejemplo.com");

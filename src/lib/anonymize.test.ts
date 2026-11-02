@@ -7,8 +7,10 @@ import {
   DEFAULT_CATEGORIES,
   needsModel,
   normalize,
+  hide,
   parseEntities,
   restore,
+  revert,
   segments,
   type Category,
   type Entities,
@@ -179,5 +181,33 @@ describe("utilidades", () => {
     expect(() => parseEntities("nada")).toThrow("sin JSON");
     expect(() => parseEntities('{"personas": "Ana"}')).toThrow("no es una lista");
     expect(() => parseEntities('{"personas": [')).toThrow("incompleto");
+  });
+});
+
+describe("correcciones", () => {
+  const ana = { placeholder: "[PERSONA_1]", original: "Ana", category: "PERSONA" as const };
+  const luis = { placeholder: "[PERSONA_2]", original: "Luis", category: "PERSONA" as const };
+
+  it("listas de sesión: siempre antes del modelo, nunca en ningún caso", async () => {
+    const extract = extractor({ personas: ["Ana", "Luis"] });
+    const lists = { always: [{ value: "Proyecto Faro", category: "EMPRESA" as const }], never: ["luis", "612345678"] };
+    const { anonymized } = await anonymize("Ana y Luis, de Proyecto Faro. Tel 612 345 678.", DEFAULT_CATEGORIES, extract, {
+      lists,
+    });
+    expect(extract).toHaveBeenCalledWith("Ana y Luis, de [EMPRESA_1]. Tel 612 345 678.");
+    expect(anonymized).toBe("[PERSONA_1] y Luis, de [EMPRESA_1]. Tel 612 345 678.");
+  });
+
+  it("revert devuelve el valor y renumera", () => {
+    const r = revert({ anonymized: "[PERSONA_1] y [PERSONA_2], [PERSONA_1]", mapping: [ana, luis] }, "[PERSONA_1]");
+    expect(r).toEqual({ anonymized: "Ana y [PERSONA_1], Ana", mapping: [{ ...luis, placeholder: "[PERSONA_1]" }] });
+  });
+
+  it("hide tapa palabras completas y numera por aparición", () => {
+    const r = hide({ anonymized: "Luis, Luisa y [PERSONA_1]. Luis", mapping: [ana] }, " Luis ", "PERSONA");
+    expect(r.anonymized).toBe("[PERSONA_1], Luisa y [PERSONA_2]. [PERSONA_1]");
+    expect(r.mapping.map((m) => m.original)).toEqual(["Luis", "Ana"]);
+    const same = { anonymized: "hola", mapping: [] };
+    expect(hide(same, "adiós", "PERSONA")).toBe(same);
   });
 });

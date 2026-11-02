@@ -1,11 +1,20 @@
 "use client";
 
-import { ArrowLeft, FileUp, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, EyeOff, FileUp, Loader2, Lock, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import logo from "@/assets/logo.svg";
 import { useAnonymizer } from "@/hooks/use-anonymizer";
-import { DEFAULT_CATEGORIES, segments, type Category } from "@/lib/anonymize";
+import {
+  CATEGORIES,
+  CATEGORY_LABELS,
+  DEFAULT_CATEGORIES,
+  hide,
+  revert,
+  segments,
+  type Category,
+  type Lists,
+} from "@/lib/anonymize";
 import { hasWebGPU } from "@/lib/engine";
 import { ACCEPT, ExtractionError, extractText } from "@/lib/extract";
 import { labelClass } from "@/lib/utils";
@@ -16,6 +25,7 @@ import { FileInfo } from "./file-info";
 import { MappingTable } from "./mapping-table";
 import { ModelStatus } from "./model-status";
 import { RestorePanel } from "./restore-panel";
+import { addAlways, addNever, SessionLists } from "./session-lists";
 import { ThemeControls } from "./theme-controls";
 import { CopyButton, NoticeBox, Placeholder, type Notice } from "./ui";
 
@@ -39,6 +49,9 @@ export function AnonymizerApp() {
   const [fileNotice, setFileNotice] = useState<Notice | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [lists, setLists] = useState<Lists>({ always: [], never: [] });
+  const [selection, setSelection] = useState("");
+  const [selCategory, setSelCategory] = useState<Category>("PERSONA");
   const fileInput = useRef<HTMLInputElement>(null);
   const busy = a.phase !== "idle";
   const result = showResult ? a.result : null;
@@ -70,11 +83,23 @@ export function AnonymizerApp() {
   }
 
   async function run() {
-    if (await a.run(text, categories)) {
+    if (await a.run(text, categories, lists)) {
       setFileNotice(null);
       setShowResult(true);
     }
   }
+
+  // Manual fixes also go to the session lists, so the next run repeats them.
+  const hideSelection = () => {
+    a.edit((r) => hide(r, selection, selCategory));
+    setLists((l) => addAlways(l, selection, selCategory));
+    setSelection("");
+  };
+
+  const revertItem = (placeholder: string, original: string) => {
+    a.edit((r) => revert(r, placeholder));
+    setLists((l) => addNever(l, original));
+  };
 
   const clear = () => {
     setText("");
@@ -119,18 +144,52 @@ export function AnonymizerApp() {
                 Anonimizado
               </h2>
               <span className="font-mono text-xs text-muted-foreground">
-                {result.mapping.length} datos · {(result.ms / 1000).toFixed(1)} s
+                {result.mapping.length ? `${result.mapping.length} datos` : "Sin datos sensibles"} ·{" "}
+                {(result.ms / 1000).toFixed(1)} s
               </span>
             </div>
-            <div data-testid="output" className={`${body} overflow-auto whitespace-pre-wrap`}>
-              {result.mapping.length ? (
-                segments(result.anonymized, result.mapping).map((s, i) =>
-                  typeof s === "string" ? s : <Placeholder key={i} item={s} />,
-                )
-              ) : (
-                <span className="text-muted-foreground">No se detectaron datos sensibles en el texto.</span>
+            <div
+              data-testid="output"
+              className={`${body} overflow-auto whitespace-pre-wrap`}
+              onMouseUp={() => setSelection(window.getSelection()?.toString().trim() ?? "")}
+              onKeyUp={() => setSelection(window.getSelection()?.toString().trim() ?? "")}
+            >
+              {segments(result.anonymized, result.mapping).map((s, i) =>
+                typeof s === "string" ? s : <Placeholder key={i} item={s} />,
               )}
             </div>
+            {selection.length >= 2 && !selection.includes("[") && (
+              <form
+                className="flex flex-wrap items-center gap-2 border-t bg-muted/50 px-5 py-3 text-sm"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  hideSelection();
+                }}
+              >
+                <span className="min-w-0 truncate">
+                  Ocultar «<span className="font-medium">{selection}</span>» como
+                </span>
+                <select
+                  aria-label="Categoría de la selección"
+                  value={selCategory}
+                  onChange={(e) => setSelCategory(e.target.value as Category)}
+                  className="h-8 rounded-lg border bg-card px-2 text-sm"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+                <button type="submit" className={`${primaryBtn} h-8`}>
+                  <EyeOff className="size-4" aria-hidden />
+                  Ocultar
+                </button>
+                <button type="button" onClick={() => setSelection("")} aria-label="Descartar selección" className={`${ghostBtn} h-8 px-2`}>
+                  <X className="size-4" aria-hidden />
+                </button>
+              </form>
+            )}
             <div className={bar}>
               <button type="button" onClick={() => setShowResult(false)} className={`${ghostBtn} -ml-3`}>
                 <ArrowLeft className="size-4" aria-hidden />
@@ -218,7 +277,10 @@ export function AnonymizerApp() {
             )}
 
             <div className={bar}>
-              <CategoryFilter value={categories} onChange={setCategories} />
+              <div className="flex flex-wrap items-center gap-2">
+                <CategoryFilter value={categories} onChange={setCategories} />
+                <SessionLists value={lists} onChange={setLists} />
+              </div>
               <div className="ml-auto flex items-center gap-2">
                 {a.phase === "running" ? (
                   <button type="button" onClick={a.cancel} className={ghostBtn}>
@@ -255,7 +317,7 @@ export function AnonymizerApp() {
         <NoticeBox notice={a.error ? { kind: "error", text: a.error } : null} />
         {result && result.mapping.length > 0 && (
           <>
-            <MappingTable mapping={result.mapping} />
+            <MappingTable mapping={result.mapping} onRevert={(m) => revertItem(m.placeholder, m.original)} />
             <RestorePanel mapping={result.mapping} />
           </>
         )}
