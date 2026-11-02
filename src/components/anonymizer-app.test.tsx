@@ -21,6 +21,14 @@ vi.mock("@/lib/engine", () => ({
 
 vi.stubGlobal("matchMedia", () => ({ matches: false }));
 
+// jsdom has no modal dialogs.
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+  this.open = true;
+};
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+  this.open = false;
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(engine.hasWebGPU).mockReturnValue(true);
@@ -61,9 +69,21 @@ test("carga el modelo al abrir y muestra solo el resultado tras anonimizar", asy
 
 test("todas las categorías activas por defecto; desactivadas no se tapan", async () => {
   await mount();
-  for (const c of ["Personas", "Importes", "Cuentas"]) expect(button(c).getAttribute("aria-pressed")).toBe("true");
-  for (const c of ["Personas", "Empresas", "Direcciones", "Teléfonos"]) fireEvent.click(button(c));
-  expect(button("Personas").getAttribute("aria-pressed")).toBe("false");
+  expect(button(/Categorías/).textContent).toContain("8/8");
+  fireEvent.click(button(/Categorías/));
+  expect(screen.getByRole("dialog")).toBeTruthy();
+
+  const box = (name: string) => screen.getByRole<HTMLInputElement>("checkbox", { name: new RegExp(`^${name}`) });
+  for (const c of ["Personas", "Importes", "Cuentas"]) expect(box(c).checked).toBe(true);
+  for (const c of ["Personas", "Empresas", "Direcciones", "Teléfonos"]) fireEvent.click(box(c));
+  expect(box("Personas").checked).toBe(false);
+  expect(button(/Categorías/).textContent).toContain("4/8");
+
+  fireEvent.click(button("Ninguna"));
+  expect(button(/Categorías/).textContent).toContain("0/8");
+  fireEvent.click(button("Todas"));
+  for (const c of ["Personas", "Empresas", "Direcciones", "Teléfonos"]) fireEvent.click(box(c));
+  fireEvent.click(button("Listo"));
 
   await run("Ana paga 300 euros desde el 612 345 678");
   expect(engine.extractEntities).not.toHaveBeenCalled();

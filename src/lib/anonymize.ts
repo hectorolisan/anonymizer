@@ -18,6 +18,17 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   CUENTA: "Cuentas",
 };
 
+export const CATEGORY_HINTS: Record<Category, string> = {
+  PERSONA: "Nombres y apellidos",
+  EMPRESA: "Empresas y organizaciones",
+  EMAIL: "Direcciones de correo",
+  TELEFONO: "Formato español, con o sin +34",
+  DNI: "DNI y NIE, con puntos o guiones",
+  IMPORTE: "Cantidades con €, EUR o 1.500,00",
+  DIRECCION: "Calle, número, CP y ciudad",
+  CUENTA: "IBAN completo o parcial y CCC",
+};
+
 export const DEFAULT_CATEGORIES: Category[] = [...CATEGORIES];
 
 const MODEL_CATEGORIES: Category[] = ["PERSONA", "EMPRESA", "DIRECCION"];

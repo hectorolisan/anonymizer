@@ -44,7 +44,7 @@ and blocks build scripts for `sharp` / `unrs-resolver` — keep both when adding
 `src/app/page.tsx` renders `<AnonymizerApp />` (`src/components/anonymizer-app.tsx`), a client
 component with the header (model selector/status + theme controls), one card that shows either the
 input editor or, after anonymising, only the result (`showResult`), the mapping table and the
-`Credit` footer. All categories are on by default (segmented toggle group in the input card). State lives in `src/hooks/use-anonymizer.ts`; the pipeline is
+`Credit` footer. All categories are on by default; `CategoryFilter` opens a modal `<dialog>` with checkboxes. State lives in `src/hooks/use-anonymizer.ts`; the pipeline is
 `src/lib/anonymize.ts`; the model layer is `src/lib/engine.ts`; file reading is `src/lib/extract.ts`.
 
 Patterns that span files:
@@ -71,7 +71,7 @@ Patterns that span files:
 - **Errors**: `AnonymizeError` / `ExtractionError` messages are user-facing Spanish; anything else is
   wrapped as a generic browser error in `use-anonymizer.ts`. Without WebGPU the regex-only
   categories still work; model categories show an error.
-- **File extraction**: `.txt`/`.md` via `File.text()`, `.docx` via `mammoth`, `.pdf` via `pdfjs-dist`
+- **File extraction**: `.txt`/`.md`/`.csv` via `File.text()`, `.docx` via `mammoth`, `.odt` via `jszip` + `DOMParser` over `content.xml`, `.pdf` via `pdfjs-dist`
   (worker as `workerPort`), both dynamically imported. No OCR: empty PDFs raise a "scanned" notice.
 - **SSR-safe browser checks**: `hasWebGPU` is read through `useSyncExternalStore` with a server
   snapshot of `true`; `ThemeControls` (reads `localStorage`/`matchMedia`) only renders after mount.

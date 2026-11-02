@@ -18,13 +18,13 @@ export function ModelStatus({ webgpu, model, ready, phase, progress, onModel }: 
   const [dot, text] = !webgpu
     ? ["bg-bad", "Sin WebGPU · solo regex"]
     : phase === "loading"
-      ? ["bg-warn animate-pulse", `Cargando modelo · ${Math.round(progress * 100)} %`]
+      ? ["bg-warn animate-pulse", `Cargando · ${Math.round(progress * 100)} %`]
       : ready === model
         ? ["bg-good", "Modelo listo"]
         : ["bg-muted-foreground", "Modelo sin cargar"];
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center gap-2">
       <div className="relative">
         <label className="sr-only" htmlFor="model">
           Modelo
@@ -47,7 +47,7 @@ export function ModelStatus({ webgpu, model, ready, phase, progress, onModel }: 
           aria-hidden
         />
       </div>
-      <span role="status" className="inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-sm text-muted-foreground">
+      <span role="status" className="inline-flex h-9 min-w-36 items-center gap-2 rounded-lg border bg-card px-3 text-sm whitespace-nowrap text-muted-foreground tabular-nums">
         <span className={`size-2 rounded-full ${dot}`} aria-hidden />
         {text}
       </span>

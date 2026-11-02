@@ -6,7 +6,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 - **Next.js 16** — static export (`output: "export"`), no backend.
 - **WebLLM** (`@mlc-ai/web-llm`) — in-browser inference on WebGPU, inside a Web Worker, with JSON-schema constrained output.
 - **Tailwind CSS 4** (PostCSS) — design tokens, light/dark mode and selectable primary color (teal by default).
-- **mammoth** + **pdfjs-dist** — local text extraction from `.docx` and `.pdf`.
+- **mammoth**, **JSZip** + **pdfjs-dist** — local text extraction from `.docx`, `.odt` and `.pdf`.
 - **Fontsource** — self-hosted fonts.
 - **Vitest** + **Testing Library** — unit and component tests.
 - **pnpm** — package manager.
@@ -29,7 +29,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 | Cuentas     | Regex, full or partial IBAN and 20-digit CCC                      | `[CUENTA_1]`    |
 
 - The same entity always gets the **same placeholder**.
-- A toggle group chooses **which categories** to anonymize (all on by default).
+- A filter dialog with checkboxes chooses **which categories** to anonymize (all on by default).
 - After anonymizing only the result is shown, with the placeholder → value map below; it lives **only in the tab**.
 - Models: Qwen3 1.7B, Qwen3 4B (default), Llama 3.2 3B and Gemma 4 E2B, loaded on start and cached by the browser.
 
@@ -47,6 +47,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 │   │   └── page.tsx                # Renders <AnonymizerApp />
 │   ├── components/
 │   │   ├── anonymizer-app.tsx      # Header, input, result and layout
+│   │   ├── category-filter.tsx     # Filter button + categories dialog
 │   │   ├── credit.tsx              # Footer credit
 │   │   ├── mapping-table.tsx       # Placeholder → original table
 │   │   ├── model-status.tsx        # Model selector + WebGPU/loading status
@@ -58,7 +59,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 │       ├── anonymize.ts            # Regex rules, prompt, dedup, chunks
 │       ├── engine.ts               # Model list + WebLLM engine + entity extraction
 │       ├── engine.worker.ts        # Web Worker running the engine
-│       ├── extract.ts              # .txt / .md / .docx / .pdf → text
+│       ├── extract.ts              # .txt / .md / .csv / .docx / .odt / .pdf → text
 │       ├── theme.ts                # Theme + primary color persistence
 │       └── utils.ts
 ├── .github/workflows/deploy.yml    # Lint + test + GitHub Pages

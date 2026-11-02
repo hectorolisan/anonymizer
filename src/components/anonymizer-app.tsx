@@ -3,10 +3,11 @@
 import { ArrowLeft, FileUp, Loader2, Lock } from "lucide-react";
 import { useRef, useState, useSyncExternalStore } from "react";
 import { useAnonymizer } from "@/hooks/use-anonymizer";
-import { CATEGORIES, CATEGORY_LABELS, DEFAULT_CATEGORIES, segments, type Category } from "@/lib/anonymize";
+import { DEFAULT_CATEGORIES, segments, type Category } from "@/lib/anonymize";
 import { hasWebGPU } from "@/lib/engine";
 import { ACCEPT, ExtractionError, extractText } from "@/lib/extract";
 import { labelClass } from "@/lib/utils";
+import { CategoryFilter } from "./category-filter";
 import { Credit } from "./credit";
 import { MappingTable } from "./mapping-table";
 import { ModelStatus } from "./model-status";
@@ -51,9 +52,6 @@ export function AnonymizerApp() {
     }
   }
 
-  const toggle = (c: Category) =>
-    setCategories((cs) => CATEGORIES.filter((x) => (x === c ? !cs.includes(c) : cs.includes(x))));
-
   async function run() {
     if (await a.run(text, categories)) {
       setFileNotice(null);
@@ -71,17 +69,17 @@ export function AnonymizerApp() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 md:flex-nowrap">
+          <div className="flex min-w-0 items-center gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
               <Lock className="size-5" aria-hidden />
             </span>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl">Anonimizador</h1>
-              <p className="text-sm text-muted-foreground">Tapa los datos sensibles antes de usar la IA de la nube</p>
+              <p className="truncate text-sm text-muted-foreground">Tapa los datos sensibles antes de usar la IA de la nube</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <ModelStatus
               webgpu={webgpu}
               model={a.model}
@@ -172,7 +170,7 @@ export function AnonymizerApp() {
               aria-label="Texto a anonimizar"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Pega un contrato, un email o una transcripción, o suelta aquí un .txt, .md, .docx o .pdf."
+              placeholder="Pega un contrato, un email o una transcripción, o suelta aquí un .txt, .md, .csv, .docx, .odt o .pdf."
               className={`${body} block resize-none bg-transparent outline-none placeholder:text-muted-foreground`}
             />
 
@@ -188,19 +186,7 @@ export function AnonymizerApp() {
             )}
 
             <div className={bar}>
-              <div role="group" aria-label="Qué anonimizar" className="flex flex-wrap gap-1 rounded-lg border bg-muted p-1">
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    aria-pressed={categories.includes(c)}
-                    onClick={() => toggle(c)}
-                    className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary aria-pressed:bg-card aria-pressed:text-primary aria-pressed:shadow-xs"
-                  >
-                    {CATEGORY_LABELS[c]}
-                  </button>
-                ))}
-              </div>
+              <CategoryFilter value={categories} onChange={setCategories} />
               <div className="ml-auto flex items-center gap-2">
                 <button type="button" disabled={busy || !text} onClick={clear} className={ghostBtn}>
                   Limpiar

@@ -1,3 +1,5 @@
+import { JSDOM } from "jsdom";
+import JSZip from "jszip";
 import { expect, test, vi } from "vitest";
 
 const libs = vi.hoisted(() => ({ extractRawText: vi.fn(), getDocument: vi.fn() }));
@@ -5,13 +7,31 @@ const libs = vi.hoisted(() => ({ extractRawText: vi.fn(), getDocument: vi.fn() }
 vi.mock("mammoth", () => ({ extractRawText: libs.extractRawText }));
 vi.mock("pdfjs-dist", () => ({ GlobalWorkerOptions: { workerPort: {} }, getDocument: libs.getDocument }));
 
+const { window } = new JSDOM();
+vi.stubGlobal("DOMParser", window.DOMParser);
+vi.stubGlobal("Node", window.Node);
+
 const { extractText } = await import("./extract");
 
 const file = (name: string, content: string | ArrayBuffer = "") => new File([content], name);
 
-test("lee .txt y .md tal cual (sin espacios sobrantes)", async () => {
+test("lee .txt, .md y .csv tal cual (sin espacios sobrantes)", async () => {
   await expect(extractText(file("nota.TXT", "  hola\n"))).resolves.toBe("hola");
   await expect(extractText(file("a.md", "# Título"))).resolves.toBe("# Título");
+  await expect(extractText(file("clientes.csv", "nombre;email\nAna;ana@b.es\n"))).resolves.toBe("nombre;email\nAna;ana@b.es");
+});
+
+test("extrae .odt: párrafos, títulos, espacios y saltos", async () => {
+  const zip = new JSZip();
+  zip.file(
+    "content.xml",
+    `<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
+      <office:body><office:text><text:h>Contrato</text:h><text:p>Ana<text:s text:c="2"/>Pérez<text:line-break/>Calle Goya 15</text:p></office:text></office:body>
+    </office:document-content>`,
+  );
+  const data = await zip.generateAsync({ type: "arraybuffer" });
+  await expect(extractText(file("c.odt", data))).resolves.toBe("Contrato\nAna  Pérez\nCalle Goya 15");
+  await expect(extractText(file("roto.odt", "no zip"))).rejects.toThrow("¿archivo dañado?");
 });
 
 test("rechaza formatos no soportados y .doc antiguo", async () => {

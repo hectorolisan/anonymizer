@@ -77,6 +77,10 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+  /* dialog modal abierto: el fondo no hace scroll */
+  html:has(dialog:modal) {
+    overflow: hidden;
+  }
   h1, h2, h3 {
     @apply font-heading font-extrabold tracking-[-0.01em] leading-[1.1];
   }

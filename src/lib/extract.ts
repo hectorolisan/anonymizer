@@ -1,18 +1,19 @@
 // Text extraction in the browser: the file never leaves the tab. No OCR.
 
-export const ACCEPT = ".txt,.md,.docx,.pdf";
+export const ACCEPT = ".txt,.md,.csv,.docx,.odt,.pdf";
 
 export class ExtractionError extends Error {}
 
 export async function extractText(file: File): Promise<string> {
   const name = file.name.toLowerCase();
   let text: string;
-  if (name.endsWith(".txt") || name.endsWith(".md")) text = await file.text();
+  if ([".txt", ".md", ".csv"].some((ext) => name.endsWith(ext))) text = await file.text();
   else if (name.endsWith(".docx")) text = await extractDocx(await file.arrayBuffer());
+  else if (name.endsWith(".odt")) text = await extractOdt(await file.arrayBuffer());
   else if (name.endsWith(".pdf")) text = await extractPdf(await file.arrayBuffer());
   else if (name.endsWith(".doc"))
     throw new ExtractionError("El formato .doc antiguo no está soportado. Guárdalo como .docx y vuelve a intentarlo.");
-  else throw new ExtractionError("Formato no soportado. Usa .txt, .md, .docx o .pdf.");
+  else throw new ExtractionError("Formato no soportado. Usa .txt, .md, .csv, .docx, .odt o .pdf.");
 
   text = text.trim();
   if (!text && name.endsWith(".pdf"))
@@ -29,6 +30,38 @@ async function extractDocx(data: ArrayBuffer) {
     return (await mammoth.extractRawText({ arrayBuffer: data })).value;
   } catch (err) {
     throw new ExtractionError("No se pudo leer el .docx (¿archivo dañado?).", { cause: err });
+  }
+}
+
+const TEXT_NS = "urn:oasis:names:tc:opendocument:xmlns:text:1.0";
+
+// ODF text: one line per paragraph/heading, <text:s c="n"/> spaces, tabs and line breaks.
+function odfText(node: Node): string {
+  let out = "";
+  for (const n of node.childNodes) {
+    if (n.nodeType === Node.TEXT_NODE) out += n.nodeValue;
+    if (n.nodeType !== Node.ELEMENT_NODE) continue;
+    const el = n as Element;
+    const tag = el.namespaceURI === TEXT_NS ? el.localName : "";
+    if (tag === "s") out += " ".repeat(Number(el.getAttribute("text:c") ?? 1));
+    else if (tag === "tab") out += "\t";
+    else if (tag === "line-break") out += "\n";
+    else if (tag === "p" || tag === "h") out += `${odfText(el)}\n`;
+    else out += odfText(el);
+  }
+  return out;
+}
+
+async function extractOdt(data: ArrayBuffer) {
+  const { default: JSZip } = await import("jszip");
+  try {
+    const xml = await (await JSZip.loadAsync(data)).file("content.xml")?.async("string");
+    if (!xml) throw new Error("sin content.xml");
+    const doc = new DOMParser().parseFromString(xml, "application/xml");
+    if (doc.getElementsByTagName("parsererror").length) throw new Error("XML inválido");
+    return odfText(doc.documentElement);
+  } catch (err) {
+    throw new ExtractionError("No se pudo leer el .odt (¿archivo dañado?).", { cause: err });
   }
 }
 
