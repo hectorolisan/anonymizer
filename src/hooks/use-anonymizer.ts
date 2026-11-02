@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { anonymize, AnonymizeError, needsModel, type Category, type MappingItem } from "@/lib/anonymize";
-import { DEFAULT_MODEL, extractEntities, hasWebGPU, loadedModel, loadModel } from "@/lib/engine";
+import { useEffect, useRef, useState } from "react";
+import { anonymize, AnonymizeError, CancelledError, needsModel, type Category, type MappingItem } from "@/lib/anonymize";
+import { DEFAULT_MODEL, extractEntities, hasWebGPU, interrupt, loadedModel, loadModel } from "@/lib/engine";
 
 export type Phase = "idle" | "loading" | "running";
 export type Result = { anonymized: string; mapping: MappingItem[]; ms: number };
+export type Chunks = { done: number; total: number };
 
 const message = (err: unknown) =>
   err instanceof AnonymizeError ? err.message : `Algo falló en el navegador: ${err instanceof Error ? err.message : err}`;
@@ -15,8 +16,10 @@ export function useAnonymizer() {
   const [ready, setReady] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
+  const [chunks, setChunks] = useState<Chunks | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const abort = useRef<AbortController | null>(null);
 
   async function ensureModel(id: string) {
     if (loadedModel() === id) return;
@@ -38,10 +41,11 @@ export function useAnonymizer() {
       await fn();
       return true;
     } catch (err) {
-      setError(message(err));
+      if (!(err instanceof CancelledError)) setError(message(err));
       return false;
     } finally {
       setPhase("idle");
+      setChunks(null);
     }
   }
 
@@ -55,15 +59,24 @@ export function useAnonymizer() {
     guard(async () => {
       if (text.trim() && categories.length && needsModel(categories)) await ensureModel(model);
       setPhase("running");
+      abort.current = new AbortController();
       const t0 = performance.now();
-      const r = await anonymize(text, categories, (part) => extractEntities(model, part));
+      const r = await anonymize(text, categories, (part) => extractEntities(model, part), {
+        signal: abort.current.signal,
+        onChunk: (done, total) => setChunks({ done, total }),
+      });
       setResult({ ...r, ms: performance.now() - t0 });
     });
+
+  const cancel = () => {
+    abort.current?.abort();
+    interrupt();
+  };
 
   const reset = () => {
     setResult(null);
     setError(null);
   };
 
-  return { model, setModel, ready, phase, progress, result, error, run, reset };
+  return { model, setModel, ready, phase, progress, chunks, result, error, run, cancel, reset };
 }

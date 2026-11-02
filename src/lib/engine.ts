@@ -6,7 +6,7 @@ import {
   type InitProgressReport,
   type ResponseFormat,
 } from "@mlc-ai/web-llm";
-import { AnonymizeError, buildPrompt, ENTITIES_SCHEMA, parseEntities, type Entities } from "./anonymize";
+import { AnonymizeError, buildPrompt, CancelledError, ENTITIES_SCHEMA, parseEntities, type Entities } from "./anonymize";
 
 // Checked with `pnpm test-files` samples (contract + CSV) on an Intel iGPU: all entities found.
 // Qwen3-4B matches the reference (qwen3:4b on Ollama). Dropped: Qwen3-1.7B (misses every person).
@@ -57,6 +57,9 @@ export function loadModel(id: string, onProgress: (r: InitProgressReport) => voi
 
 export const loadedModel = () => loaded;
 
+// The running completion returns finish_reason "abort".
+export const interrupt = () => engine?.interruptGenerate();
+
 export const isCached = (id: string) => hasModelInCache(id);
 
 export async function deleteCached(id: string) {
@@ -79,6 +82,7 @@ export async function extractEntities(model: string, text: string): Promise<Enti
       response_format: { type: "json_object", schema: ENTITIES_SCHEMA } as ResponseFormat,
       ...(model.startsWith("Qwen3") && { extra_body: { enable_thinking: false } }),
     });
+    if (reply.choices[0]?.finish_reason === "abort") throw new CancelledError();
     try {
       return parseEntities(reply.choices[0]?.message.content ?? "");
     } catch (err) {

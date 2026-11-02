@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   anonymize,
   AnonymizeError,
+  CancelledError,
   chunk,
   DEFAULT_CATEGORIES,
   needsModel,
@@ -125,6 +126,18 @@ describe("modelo", () => {
     const { anonymized } = await anonymize(text, only("PERSONA"), extract);
     expect(extract).toHaveBeenCalledTimes(2);
     expect(anonymized).toMatch(/^\[PERSONA_\d\] x+\ny+ \[PERSONA_\d\]$/);
+  });
+
+  it("informa del progreso por trozo y se para al cancelar", async () => {
+    const ctrl = new AbortController();
+    const onChunk = vi.fn();
+    const extract = vi.fn(async () => (ctrl.abort(), none));
+    const text = `Ana ${"x".repeat(1990)}\n${"y".repeat(100)} Luis`;
+    await expect(anonymize(text, only("PERSONA"), extract, { signal: ctrl.signal, onChunk })).rejects.toThrow(
+      CancelledError,
+    );
+    expect(extract).toHaveBeenCalledTimes(1);
+    expect(onChunk).toHaveBeenCalledWith(0, 2);
   });
 
   it("errores de entrada", async () => {

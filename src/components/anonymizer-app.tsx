@@ -2,7 +2,7 @@
 
 import { ArrowLeft, FileUp, Loader2, Lock } from "lucide-react";
 import Image from "next/image";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import logo from "@/assets/logo.svg";
 import { useAnonymizer } from "@/hooks/use-anonymizer";
 import { DEFAULT_CATEGORIES, segments, type Category } from "@/lib/anonymize";
@@ -42,6 +42,16 @@ export function AnonymizerApp() {
   const fileInput = useRef<HTMLInputElement>(null);
   const busy = a.phase !== "idle";
   const result = showResult ? a.result : null;
+  // Model download, then one step per chunk the model reads.
+  const fraction = a.phase === "loading" ? a.progress : a.chunks ? a.chunks.done / a.chunks.total : null;
+
+  // The mapping only lives in this tab: warn before closing it.
+  useEffect(() => {
+    if (!a.result) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [a.result]);
 
   async function openFile(file?: File) {
     if (!file) return;
@@ -185,33 +195,54 @@ export function AnonymizerApp() {
               aria-label="Texto a anonimizar"
               value={text}
               onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !busy) {
+                  e.preventDefault();
+                  run();
+                }
+              }}
               placeholder="Escribe, pega o suelta un documento…"
               className={`${body} resize-none bg-transparent outline-none placeholder:text-muted-foreground`}
             />
 
-            {a.phase === "loading" && (
+            {fraction !== null && (
               <div
                 role="progressbar"
-                aria-label="Carga del modelo"
-                aria-valuenow={Math.round(a.progress * 100)}
+                aria-label={a.phase === "loading" ? "Carga del modelo" : "Anonimización"}
+                aria-valuenow={Math.round(fraction * 100)}
                 className="h-0.5 bg-muted"
               >
-                <div className="h-full bg-primary transition-[width]" style={{ width: `${a.progress * 100}%` }} />
+                <div className="h-full bg-primary transition-[width]" style={{ width: `${fraction * 100}%` }} />
               </div>
             )}
 
             <div className={bar}>
               <CategoryFilter value={categories} onChange={setCategories} />
               <div className="ml-auto flex items-center gap-2">
-                <button type="button" disabled={busy || !text} onClick={clear} className={ghostBtn}>
-                  Limpiar
-                </button>
-                <button type="button" disabled={busy} onClick={run} className={primaryBtn}>
+                {a.phase === "running" ? (
+                  <button type="button" onClick={a.cancel} className={ghostBtn}>
+                    Cancelar
+                  </button>
+                ) : (
+                  <button type="button" disabled={busy || !text} onClick={clear} className={ghostBtn}>
+                    Limpiar
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={run}
+                  aria-keyshortcuts="Control+Enter"
+                  title="Ctrl + Enter"
+                  className={primaryBtn}
+                >
                   {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Lock className="size-4" aria-hidden />}
                   {a.phase === "loading"
                     ? `Cargando modelo · ${Math.round(a.progress * 100)} %`
                     : a.phase === "running"
-                      ? "Anonimizando…"
+                      ? a.chunks && a.chunks.total > 1
+                        ? `Anonimizando · ${a.chunks.done + 1}/${a.chunks.total}`
+                        : "Anonimizando…"
                       : "Anonimizar"}
                 </button>
               </div>

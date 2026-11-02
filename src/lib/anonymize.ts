@@ -42,6 +42,15 @@ export type Extractor = (text: string) => Promise<Entities>;
 
 export class AnonymizeError extends Error {}
 
+// User pressed Cancel: not shown as an error.
+export class CancelledError extends AnonymizeError {
+  constructor() {
+    super("Anonimización cancelada.");
+  }
+}
+
+export type Progress = { signal?: AbortSignal; onChunk?: (done: number, total: number) => void };
+
 // --- Regex, in application order (most specific first) ----------------------
 
 const EMAIL_RE = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g;
@@ -146,7 +155,7 @@ function createMapper() {
   return { mapping, applyRegex, applyEntities };
 }
 
-export async function anonymize(text: string, categories: Iterable<Category>, extract: Extractor) {
+export async function anonymize(text: string, categories: Iterable<Category>, extract: Extractor, progress: Progress = {}) {
   if (!text.trim()) throw new AnonymizeError("No hay texto para anonimizar.");
   const active = new Set(categories);
   if (!active.size) throw new AnonymizeError("Marca al menos una categoría que anonimizar.");
@@ -156,8 +165,11 @@ export async function anonymize(text: string, categories: Iterable<Category>, ex
 
   if (needsModel(active)) {
     const all: Entities = { personas: [], empresas: [], direcciones: [] };
-    for (const part of chunk(text)) {
+    const parts = chunk(text);
+    for (const [i, part] of parts.entries()) {
+      progress.onChunk?.(i, parts.length);
       const e = await extract(part);
+      if (progress.signal?.aborted) throw new CancelledError();
       all.personas.push(...e.personas);
       all.empresas.push(...e.empresas);
       all.direcciones.push(...e.direcciones);

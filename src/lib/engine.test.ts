@@ -84,3 +84,9 @@ test("extractEntities retries once, then fails clearly", async () => {
   mlc.create.mockResolvedValue(reply("basura"));
   await expect(engine.extractEntities("Llama", "x")).rejects.toThrow("tras un reintento");
 });
+
+test("extractEntities stops without retrying when the generation is interrupted", async () => {
+  mlc.create.mockResolvedValueOnce({ choices: [{ message: { content: '{"perso' }, finish_reason: "abort" }] });
+  await expect(engine.extractEntities("Llama", "x")).rejects.toThrow("cancelada");
+  expect(mlc.create).toHaveBeenCalledTimes(1);
+});

@@ -12,6 +12,7 @@ vi.mock("@/lib/engine", () => ({
   modelName: (id: string) => id.replace(/-q4f16_1-MLC$/, ""),
   hasWebGPU: vi.fn(() => true),
   loadedModel: () => state.loaded,
+  interrupt: vi.fn(),
   loadModel: vi.fn(async (id: string, onProgress: (r: { progress: number }) => void) => {
     onProgress({ progress: 1 });
     state.loaded = id;
@@ -116,6 +117,26 @@ test("descarga el resultado en el formato elegido", async () => {
   fireEvent.click(screen.getByRole("menuitem", { name: ".json", hidden: true }));
   expect(blobs[0].type).toBe("application/json;charset=utf-8");
   expect(await blobs[0].text()).toBe("[EMAIL_1]");
+});
+
+test("Ctrl+Enter anonimiza y Cancelar vuelve al editor sin error", async () => {
+  await mount();
+  fireEvent.change(input(), { target: { value: "ana@ejemplo.com" } });
+  await act(async () => fireEvent.keyDown(input(), { key: "Enter", ctrlKey: true }));
+  expect(screen.getByTestId("output").textContent).toBe("[EMAIL_1]");
+
+  fireEvent.click(button("Editar texto"));
+  let finish = () => {};
+  vi.mocked(engine.extractEntities).mockImplementationOnce(
+    () => new Promise((resolve) => (finish = () => resolve({ personas: [], empresas: [], direcciones: [] }))),
+  );
+  fireEvent.change(input(), { target: { value: "Ana Pérez" } });
+  await act(async () => fireEvent.click(button(/Anonimizar/)));
+  fireEvent.click(button("Cancelar"));
+  expect(engine.interrupt).toHaveBeenCalled();
+  await act(async () => finish());
+  expect(input().value).toBe("Ana Pérez");
+  expect(screen.queryByRole("alert")).toBeNull();
 });
 
 test("Nuevo texto vuelve al editor vacío", async () => {

@@ -71,7 +71,7 @@ Patterns that span files:
   Before adding a model, run the `pnpm test-files` samples (`muestra.txt`, `muestra.csv`) through it: every
   person, company and address must be found (Qwen3-1.7B was dropped for missing all persons).
   `use-anonymizer.ts` loads the selected model on mount and whenever it changes (no download button).
-- **Errors**: `AnonymizeError` / `ExtractionError` messages are user-facing Spanish; anything else is
+- **Errors**: Cancel aborts the `AbortSignal` passed to `anonymize()` and calls `interrupt()`; a completion with `finish_reason: "abort"` throws `CancelledError`, which is not shown. `AnonymizeError` / `ExtractionError` messages are user-facing Spanish; anything else is
   wrapped as a generic browser error in `use-anonymizer.ts`. Without WebGPU the regex-only
   categories still work; model categories show an error.
 - **File extraction**: max `MAX_MB` (20) per file, formats listed in `FORMATS` (shown by `FileInfo`). `.txt`/`.md`/`.csv`/`.json` via `File.text()`, `.docx` via `mammoth`, `.odt` via `jszip` + `DOMParser` over `content.xml`, `.pdf` via `pdfjs-dist` (worker passed as `workerSrc` asset URL: as `new Worker()` Turbopack's bootstrap fails to start it)
