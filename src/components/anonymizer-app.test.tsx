@@ -107,6 +107,17 @@ test("errores claros: texto vacío y navegador sin WebGPU", async () => {
   expect(engine.extractEntities).not.toHaveBeenCalled();
 });
 
+test("descarga el resultado en el formato elegido", async () => {
+  HTMLElement.prototype.hidePopover ??= () => {};
+  const blobs: Blob[] = [];
+  vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: (b: Blob) => (blobs.push(b), "blob:x"), revokeObjectURL: () => {} }));
+  await mount();
+  await run("ana@ejemplo.com");
+  fireEvent.click(screen.getByRole("menuitem", { name: ".json", hidden: true }));
+  expect(blobs[0].type).toBe("application/json;charset=utf-8");
+  expect(await blobs[0].text()).toBe("[EMAIL_1]");
+});
+
 test("Nuevo texto vuelve al editor vacío", async () => {
   await mount();
   await run("ana@ejemplo.com");

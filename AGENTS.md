@@ -74,7 +74,7 @@ Patterns that span files:
 - **Errors**: `AnonymizeError` / `ExtractionError` messages are user-facing Spanish; anything else is
   wrapped as a generic browser error in `use-anonymizer.ts`. Without WebGPU the regex-only
   categories still work; model categories show an error.
-- **File extraction**: max `MAX_MB` (20) per file, formats listed in `FORMATS` (shown by `FileInfo`). `.txt`/`.md`/`.csv` via `File.text()`, `.docx` via `mammoth`, `.odt` via `jszip` + `DOMParser` over `content.xml`, `.pdf` via `pdfjs-dist` (worker passed as `workerSrc` asset URL: as `new Worker()` Turbopack's bootstrap fails to start it)
+- **File extraction**: max `MAX_MB` (20) per file, formats listed in `FORMATS` (shown by `FileInfo`). `.txt`/`.md`/`.csv`/`.json` via `File.text()`, `.docx` via `mammoth`, `.odt` via `jszip` + `DOMParser` over `content.xml`, `.pdf` via `pdfjs-dist` (worker passed as `workerSrc` asset URL: as `new Worker()` Turbopack's bootstrap fails to start it)
   (worker as `workerPort`), both dynamically imported. No OCR: empty PDFs raise a "scanned" notice.
 - **SSR-safe browser checks**: `hasWebGPU` is read through `useSyncExternalStore` with a server
   snapshot of `true`; `ThemeControls` (reads `localStorage`/`matchMedia`) only renders after mount.

@@ -19,7 +19,7 @@ export function Placeholder({ item }: { item: MappingItem }) {
   return <mark className="ph">{item.placeholder}</mark>;
 }
 
-export function CopyButton({ text, className }: { text: string; className: string }) {
+export function CopyButton({ text, className, label = "Copiar" }: { text: string; className: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -33,7 +33,7 @@ export function CopyButton({ text, className }: { text: string; className: strin
       }}
     >
       {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-      {copied ? "Copiado" : "Copiar"}
+      {copied ? "Copiado" : label}
     </button>
   );
 }

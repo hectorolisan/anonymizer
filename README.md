@@ -64,7 +64,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 │       ├── anonymize.ts            # Regex rules, prompt, dedup, chunks
 │       ├── engine.ts               # Model list + WebLLM engine + entity extraction
 │       ├── engine.worker.ts        # Web Worker running the engine
-│       ├── extract.ts              # .txt / .md / .csv / .docx / .odt / .pdf → text
+│       ├── extract.ts              # .txt / .md / .csv / .json / .docx / .odt / .pdf → text
 │       ├── theme.ts                # Theme + primary color persistence
 │       └── utils.ts
 ├── .github/workflows/deploy.yml    # Lint + test + GitHub Pages

@@ -15,10 +15,11 @@ const { extractText, MAX_MB } = await import("./extract");
 
 const file = (name: string, content: string | ArrayBuffer = "") => new File([content], name);
 
-test("lee .txt, .md y .csv tal cual (sin espacios sobrantes)", async () => {
+test("lee .txt, .md, .csv y .json tal cual (sin espacios sobrantes)", async () => {
   await expect(extractText(file("nota.TXT", "  hola\n"))).resolves.toBe("hola");
   await expect(extractText(file("a.md", "# Título"))).resolves.toBe("# Título");
   await expect(extractText(file("clientes.csv", "nombre;email\nAna;ana@b.es\n"))).resolves.toBe("nombre;email\nAna;ana@b.es");
+  await expect(extractText(file("datos.json", '{"nombre": "Ana"}\n'))).resolves.toBe('{"nombre": "Ana"}');
 });
 
 test("rechaza archivos de más de MAX_MB antes de leerlos", async () => {

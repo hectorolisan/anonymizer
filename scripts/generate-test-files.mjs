@@ -90,6 +90,20 @@ function csv(target) {
   return rows.join("\n");
 }
 
+function json(target) {
+  const rows = [];
+  for (let i = 0, size = 0; size < target; i++) {
+    const r = record(i);
+    const row = JSON.stringify({
+      nombre: r.person, dni: r.dni, email: r.email, telefono: r.phone,
+      empresa: r.company, direccion: r.address, iban: r.iban, importe: `${r.amount} €`,
+    });
+    rows.push(row);
+    size += bytes(row) + 4;
+  }
+  return `[\n  ${rows.join(",\n  ")}\n]`;
+}
+
 // Uncompressed (STORE) so the file size matches the text size.
 async function docx(paragraphs) {
   const zip = new JSZip();
@@ -174,6 +188,7 @@ const sample = contract(0);
 await write("muestra.txt", txt(sample));
 await write("muestra.md", md(sample));
 await write("muestra.csv", csv(1000));
+await write("muestra.json", json(1000));
 await write("muestra.docx", await docx(sample));
 await write("muestra.odt", await odt(sample));
 await write("muestra.pdf", pdf(sample));
@@ -194,6 +209,7 @@ async function fit(build) {
 await write("limite.txt", await fit(txt));
 await write("limite.md", await fit(md));
 await write("limite.csv", csv(LIMIT));
+await write("limite.json", json(LIMIT - 16));
 await write("limite.docx", await fit(docx));
 await write("limite.odt", await fit(odt));
 await write("limite.pdf", await fit(pdf));

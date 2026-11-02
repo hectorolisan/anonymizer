@@ -1,13 +1,15 @@
 // Text extraction in the browser: the file never leaves the tab. No OCR.
 
 export const FORMATS = [
-  { ext: ".txt, .md, .csv", label: "Texto plano" },
+  { ext: ".txt, .md, .csv, .json", label: "Texto plano" },
   { ext: ".docx", label: "Word" },
   { ext: ".odt", label: "LibreOffice / OpenDocument" },
   { ext: ".pdf", label: "Con texto seleccionable (sin OCR)" },
 ];
 
-export const ACCEPT = ".txt,.md,.csv,.docx,.odt,.pdf";
+const PLAIN = [".txt", ".md", ".csv", ".json"];
+
+export const ACCEPT = [...PLAIN, ".docx", ".odt", ".pdf"].join(",");
 
 // The model reads ~2000 chars per call: bigger files mean very long runs in the browser.
 export const MAX_MB = 20;
@@ -21,13 +23,13 @@ export async function extractText(file: File): Promise<string> {
     );
   const name = file.name.toLowerCase();
   let text: string;
-  if ([".txt", ".md", ".csv"].some((ext) => name.endsWith(ext))) text = await file.text();
+  if (PLAIN.some((ext) => name.endsWith(ext))) text = await file.text();
   else if (name.endsWith(".docx")) text = await extractDocx(await file.arrayBuffer());
   else if (name.endsWith(".odt")) text = await extractOdt(await file.arrayBuffer());
   else if (name.endsWith(".pdf")) text = await extractPdf(await file.arrayBuffer());
   else if (name.endsWith(".doc"))
     throw new ExtractionError("El formato .doc antiguo no está soportado. Guárdalo como .docx y vuelve a intentarlo.");
-  else throw new ExtractionError("Formato no soportado. Usa .txt, .md, .csv, .docx, .odt o .pdf.");
+  else throw new ExtractionError("Formato no soportado. Usa .txt, .md, .csv, .json, .docx, .odt o .pdf.");
 
   text = text.trim();
   if (!text && name.endsWith(".pdf"))

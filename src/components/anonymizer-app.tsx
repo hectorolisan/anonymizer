@@ -11,6 +11,7 @@ import { ACCEPT, ExtractionError, extractText } from "@/lib/extract";
 import { labelClass } from "@/lib/utils";
 import { CategoryFilter } from "./category-filter";
 import { Credit } from "./credit";
+import { DownloadMenu } from "./download-menu";
 import { FileInfo } from "./file-info";
 import { MappingTable } from "./mapping-table";
 import { ModelStatus } from "./model-status";
@@ -36,6 +37,7 @@ export function AnonymizerApp() {
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [showResult, setShowResult] = useState(false);
   const [fileNotice, setFileNotice] = useState<Notice | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const busy = a.phase !== "idle";
@@ -46,6 +48,7 @@ export function AnonymizerApp() {
     setFileNotice({ kind: "info", text: `Extrayendo texto de “${file.name}”…` });
     try {
       setText(await extractText(file));
+      setFileName(file.name.replace(/\.[^.]+$/, ""));
       setFileNotice({ kind: "info", text: `Texto extraído de “${file.name}”. Revísalo antes de anonimizar.` });
     } catch (err) {
       setFileNotice(
@@ -65,6 +68,7 @@ export function AnonymizerApp() {
 
   const clear = () => {
     setText("");
+    setFileName(null);
     setFileNotice(null);
     setShowResult(false);
     a.reset();
@@ -125,6 +129,11 @@ export function AnonymizerApp() {
                 <button type="button" onClick={clear} className={ghostBtn}>
                   Nuevo texto
                 </button>
+                <DownloadMenu
+                  text={result.anonymized}
+                  base={fileName ? `${fileName}-anonimizado` : "anonimizado"}
+                  className={ghostBtn}
+                />
                 <CopyButton text={result.anonymized} className={primaryBtn} />
               </div>
             </div>
