@@ -35,8 +35,8 @@ pnpm is the package manager (`pnpm-lock.yaml` is committed; npm/bun also work).
   `navigator.gpu` so only the regex flow runs; first time: `pnpm exec playwright install chromium`
 - `pnpm test-files` — writes fictitious documents to `./test-files/` (gitignored): `muestra.*` (one contract per format, for trying each model), `limite.*` (just under `MAX_MB`), `excede.txt` (just over, must be rejected) and `muestra.esperado.json` (ground truth for `/benchmark`)
 
-CI: `.github/workflows/e2e.yml` runs the E2E tests on PRs and `main`; `.github/dependabot.yml`
-opens weekly update PRs with a cooldown. Deploy: `.github/workflows/deploy.yml` publishes `./out/` to GitHub Pages on every push to `main`
+CI: `.github/workflows/e2e.yml` runs the E2E tests on PRs and `main`. No Dependabot: dependencies
+are updated by hand. Deploy: `.github/workflows/deploy.yml` publishes `./out/` to GitHub Pages on every push to `main`
 (lint + test first). `basePath` comes from `PAGES_BASE_PATH` (`/anonymizer` in CI, empty locally), so
 never hardcode root-relative asset URLs.
 
