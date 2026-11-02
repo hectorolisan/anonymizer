@@ -8,7 +8,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 - **Tailwind CSS 4** (PostCSS) — design tokens, light/dark mode and selectable primary color (teal by default).
 - **mammoth**, **JSZip** + **pdfjs-dist** — local text extraction from `.docx`, `.odt` and `.pdf`.
 - **Fontsource** — self-hosted fonts.
-- **Vitest** + **Testing Library** — unit and component tests.
+- **Vitest** + **Testing Library** — unit and component tests; **Playwright** — E2E.
 - **pnpm** — package manager.
 
 > Requires a browser with WebGPU (e.g. recent Chrome or Edge) for names, companies and addresses. The other categories work without it.
@@ -97,6 +97,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 | `pnpm build`   | Build static site into `./out/`, deployable on any host |
 | `pnpm lint`    | Run ESLint                                              |
 | `pnpm test`    | Run Vitest                                              |
+| `pnpm test:e2e` | Run Playwright E2E tests (Chromium, regex-only flow)   |
 | `pnpm test-files` | Generate fictitious test documents in `./test-files/` |
 
 `/benchmark` (not linked from the app) runs each model over the `muestra.*` files and reports which expected persons, companies and addresses were left uncovered.

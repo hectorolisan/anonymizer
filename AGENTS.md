@@ -31,9 +31,12 @@ pnpm is the package manager (`pnpm-lock.yaml` is committed; npm/bun also work).
 - `pnpm build` — static export to `./out/`
 - `pnpm lint` — ESLint (`eslint-config-next` core-web-vitals + typescript)
 - `pnpm test` — Vitest (`vitest run`; `vitest.config.mts` only maps the `@/` alias, default env is node)
+- `pnpm test:e2e` — Playwright (`e2e/*.e2e.ts`, Chromium, starts `pnpm dev` on :3100). Tests remove
+  `navigator.gpu` so only the regex flow runs; first time: `pnpm exec playwright install chromium`
 - `pnpm test-files` — writes fictitious documents to `./test-files/` (gitignored): `muestra.*` (one contract per format, for trying each model), `limite.*` (just under `MAX_MB`), `excede.txt` (just over, must be rejected) and `muestra.esperado.json` (ground truth for `/benchmark`)
 
-Deploy: `.github/workflows/deploy.yml` publishes `./out/` to GitHub Pages on every push to `main`
+CI: `.github/workflows/e2e.yml` runs the E2E tests on PRs and `main`; `.github/dependabot.yml`
+opens weekly update PRs with a cooldown. Deploy: `.github/workflows/deploy.yml` publishes `./out/` to GitHub Pages on every push to `main`
 (lint + test first). `basePath` comes from `PAGES_BASE_PATH` (`/anonymizer` in CI, empty locally), so
 never hardcode root-relative asset URLs.
 

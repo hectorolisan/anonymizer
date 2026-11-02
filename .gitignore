@@ -45,3 +45,7 @@ next-env.d.ts
 
 # generated test documents (pnpm test-files)
 /test-files
+
+# playwright
+/test-results
+/playwright-report
