@@ -36,7 +36,7 @@ export function FileInfo() {
           ))}
         </dl>
         <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
-          Máximo <span className="font-medium text-foreground">{MAX_MB} MB</span>. No salen de tu navegador.
+          Máximo <span className="font-medium text-foreground">{MAX_MB} MB</span>.
         </p>
       </div>
     </>

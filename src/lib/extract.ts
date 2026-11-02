@@ -81,10 +81,8 @@ async function extractOdt(data: ArrayBuffer) {
 
 async function extractPdf(data: ArrayBuffer) {
   const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerPort ??= new Worker(
-    new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
-    { type: "module" },
-  );
+  // Plain asset URL: as `new Worker(...)` Turbopack wraps it in a bootstrap that fails to start.
+  pdfjs.GlobalWorkerOptions.workerSrc ||= new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).href;
   try {
     const pdf = await pdfjs.getDocument({ data }).promise;
     const pages: string[] = [];

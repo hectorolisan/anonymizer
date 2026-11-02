@@ -68,6 +68,8 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 │       ├── theme.ts                # Theme + primary color persistence
 │       └── utils.ts
 ├── .github/workflows/deploy.yml    # Lint + test + GitHub Pages
+├── scripts/
+│   └── generate-test-files.mjs     # Fictitious test documents → ./test-files
 ├── AGENTS.md
 ├── LICENSE
 ├── next.config.ts
@@ -85,6 +87,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 | `pnpm build`   | Build static site into `./out/`, deployable on any host |
 | `pnpm lint`    | Run ESLint                                              |
 | `pnpm test`    | Run Vitest                                              |
+| `pnpm test-files` | Generate fictitious test documents in `./test-files/` |
 
 > You can also use `npm` or `bun` if you prefer.
 

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # claude
 .claude
+
+# generated test documents (pnpm test-files)
+/test-files

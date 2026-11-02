@@ -5,7 +5,7 @@ import { expect, test, vi } from "vitest";
 const libs = vi.hoisted(() => ({ extractRawText: vi.fn(), getDocument: vi.fn() }));
 
 vi.mock("mammoth", () => ({ extractRawText: libs.extractRawText }));
-vi.mock("pdfjs-dist", () => ({ GlobalWorkerOptions: { workerPort: {} }, getDocument: libs.getDocument }));
+vi.mock("pdfjs-dist", () => ({ GlobalWorkerOptions: { workerSrc: "worker.mjs" }, getDocument: libs.getDocument }));
 
 const { window } = new JSDOM();
 vi.stubGlobal("DOMParser", window.DOMParser);

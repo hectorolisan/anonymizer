@@ -31,6 +31,7 @@ pnpm is the package manager (`pnpm-lock.yaml` is committed; npm/bun also work).
 - `pnpm build` — static export to `./out/`
 - `pnpm lint` — ESLint (`eslint-config-next` core-web-vitals + typescript)
 - `pnpm test` — Vitest (`vitest run`; `vitest.config.mts` only maps the `@/` alias, default env is node)
+- `pnpm test-files` — writes fictitious documents to `./test-files/` (gitignored): `muestra.*` (one contract per format, for trying each model), `limite.*` (just under `MAX_MB`) and `excede.txt` (just over, must be rejected)
 
 Deploy: `.github/workflows/deploy.yml` publishes `./out/` to GitHub Pages on every push to `main`
 (lint + test first). `basePath` comes from `PAGES_BASE_PATH` (`/anonymizer` in CI, empty locally), so
@@ -71,7 +72,7 @@ Patterns that span files:
 - **Errors**: `AnonymizeError` / `ExtractionError` messages are user-facing Spanish; anything else is
   wrapped as a generic browser error in `use-anonymizer.ts`. Without WebGPU the regex-only
   categories still work; model categories show an error.
-- **File extraction**: max `MAX_MB` (20) per file, formats listed in `FORMATS` (shown by `FileInfo`). `.txt`/`.md`/`.csv` via `File.text()`, `.docx` via `mammoth`, `.odt` via `jszip` + `DOMParser` over `content.xml`, `.pdf` via `pdfjs-dist`
+- **File extraction**: max `MAX_MB` (20) per file, formats listed in `FORMATS` (shown by `FileInfo`). `.txt`/`.md`/`.csv` via `File.text()`, `.docx` via `mammoth`, `.odt` via `jszip` + `DOMParser` over `content.xml`, `.pdf` via `pdfjs-dist` (worker passed as `workerSrc` asset URL: as `new Worker()` Turbopack's bootstrap fails to start it)
   (worker as `workerPort`), both dynamically imported. No OCR: empty PDFs raise a "scanned" notice.
 - **SSR-safe browser checks**: `hasWebGPU` is read through `useSyncExternalStore` with a server
   snapshot of `true`; `ThemeControls` (reads `localStorage`/`matchMedia`) only renders after mount.
