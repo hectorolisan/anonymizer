@@ -40,9 +40,13 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 ├── public/
 │   └── cover.webp
 ├── src/
+│   ├── assets/
+│   │   └── logo.svg                # Header logo (pixel mascot)
 │   ├── app/
+│   │   ├── apple-icon.png
+│   │   ├── favicon.ico
 │   │   ├── globals.css             # Tailwind + design tokens
-│   │   ├── icon.svg
+│   │   ├── icon.svg                # Pixel mascot favicon
 │   │   ├── layout.tsx              # <html>, fonts, theme script + metadata
 │   │   └── page.tsx                # Renders <AnonymizerApp />
 │   ├── components/

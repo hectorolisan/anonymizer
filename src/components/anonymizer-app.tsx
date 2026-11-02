@@ -1,7 +1,9 @@
 "use client";
 
 import { ArrowLeft, FileUp, Loader2, Lock } from "lucide-react";
+import Image from "next/image";
 import { useRef, useState, useSyncExternalStore } from "react";
+import logo from "@/assets/logo.svg";
 import { useAnonymizer } from "@/hooks/use-anonymizer";
 import { DEFAULT_CATEGORIES, segments, type Category } from "@/lib/anonymize";
 import { hasWebGPU } from "@/lib/engine";
@@ -71,12 +73,11 @@ export function AnonymizerApp() {
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 md:flex-nowrap">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
-              <Lock className="size-5" aria-hidden />
-            </span>
+            {/* Pixel art: no optimisation (static export) and crisp scaling. */}
+            <Image src={logo} alt="" width={40} height={40} unoptimized className="size-10 shrink-0 rounded-lg [image-rendering:pixelated]" />
             <div className="min-w-0">
               <h1 className="text-2xl">Anonimizador</h1>
-              <p className="truncate text-sm text-muted-foreground">Tapa los datos sensibles antes de usar la IA de la nube</p>
+              <p className="truncate text-sm text-muted-foreground">Oculta datos personales en local</p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -170,7 +171,7 @@ export function AnonymizerApp() {
               aria-label="Texto a anonimizar"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Pega un contrato, un email o una transcripción, o suelta aquí un .txt, .md, .csv, .docx, .odt o .pdf."
+              placeholder="Escribe, pega o suelta un documento…"
               className={`${body} block resize-none bg-transparent outline-none placeholder:text-muted-foreground`}
             />
 

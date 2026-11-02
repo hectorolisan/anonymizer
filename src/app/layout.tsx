@@ -11,7 +11,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Anonimizador",
-  description: "Tapa los datos sensibles de tus textos antes de usar la IA de la nube. 100 % en el navegador con WebGPU.",
+  description: "Oculta datos personales en local antes de usar una IA. Funciona en el navegador con WebGPU.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
