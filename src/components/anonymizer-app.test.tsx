@@ -63,6 +63,9 @@ test("carga el modelo al abrir y muestra solo el resultado tras anonimizar", asy
   const rows = screen.getAllByRole("row").slice(1).map((r) => r.textContent);
   expect(rows).toEqual(["[PERSONA_1]Ana PérezPersonas", "[EMAIL_1]ana@ejemplo.comEmails"]);
 
+  fireEvent.change(screen.getByLabelText("Respuesta de la IA"), { target: { value: "Hola [PERSONA_1]" } });
+  expect(screen.getByTestId("restored").textContent).toBe("Hola Ana Pérez");
+
   fireEvent.click(button("Editar texto"));
   expect(input().value).toBe("Ana Pérez escribe desde ana@ejemplo.com");
 });

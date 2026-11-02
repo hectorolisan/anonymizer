@@ -191,6 +191,12 @@ function renumber(text: string, mapping: MappingItem[]) {
   };
 }
 
+// Back from the AI's reply: placeholders in the mapping -> real values. Models sometimes lowercase them.
+export function restore(text: string, mapping: MappingItem[]) {
+  const map = new Map(mapping.map((m) => [m.placeholder, m.original]));
+  return text.replace(/\[([A-Za-z]+_\d+)\]/g, (p, id: string) => map.get(`[${id.toUpperCase()}]`) ?? p);
+}
+
 export type Segment = string | MappingItem;
 
 // Only placeholders in the mapping are highlighted, not ones typed in the original.

@@ -7,6 +7,7 @@ import {
   needsModel,
   normalize,
   parseEntities,
+  restore,
   segments,
   type Category,
   type Entities,
@@ -142,6 +143,13 @@ describe("utilidades", () => {
   it("segments solo resalta marcadores del mapa", () => {
     const item = { placeholder: "[EMAIL_1]", original: "a@b.es", category: "EMAIL" as const };
     expect(segments("Hola [EMAIL_1] y [EMAIL_2].", [item])).toEqual(["Hola ", item, " y [EMAIL_2]."]);
+  });
+
+  it("restore devuelve los valores reales, también en minúsculas", () => {
+    const item = { placeholder: "[PERSONA_1]", original: "Ana Pérez", category: "PERSONA" as const };
+    expect(restore("Hola [PERSONA_1] y [persona_1]; [PERSONA_2] no existe.", [item])).toBe(
+      "Hola Ana Pérez y Ana Pérez; [PERSONA_2] no existe.",
+    );
   });
 
   it("chunk respeta el máximo y no pierde texto", () => {

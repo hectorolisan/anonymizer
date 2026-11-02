@@ -14,6 +14,7 @@ import { Credit } from "./credit";
 import { FileInfo } from "./file-info";
 import { MappingTable } from "./mapping-table";
 import { ModelStatus } from "./model-status";
+import { RestorePanel } from "./restore-panel";
 import { ThemeControls } from "./theme-controls";
 import { CopyButton, NoticeBox, Placeholder, type Notice } from "./ui";
 
@@ -211,7 +212,12 @@ export function AnonymizerApp() {
 
         <NoticeBox notice={fileNotice} />
         <NoticeBox notice={a.error ? { kind: "error", text: a.error } : null} />
-        {result && result.mapping.length > 0 && <MappingTable mapping={result.mapping} />}
+        {result && result.mapping.length > 0 && (
+          <>
+            <MappingTable mapping={result.mapping} />
+            <RestorePanel mapping={result.mapping} />
+          </>
+        )}
       </main>
 
       <footer className="px-4 pb-5">
