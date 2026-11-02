@@ -85,6 +85,10 @@ Patterns that span files:
   categories still work; model categories show an error.
 - **File extraction**: max `MAX_MB` (20) per file, formats listed in `FORMATS` (shown by `FileInfo`). `.txt`/`.md`/`.csv`/`.json` via `File.text()`, `.docx` via `mammoth`, `.odt` via `jszip` + `DOMParser` over `content.xml`, `.pdf` via `pdfjs-dist` (worker passed as `workerSrc` asset URL: as `new Worker()` Turbopack's bootstrap fails to start it)
   (worker as `workerPort`), both dynamically imported. No OCR: empty PDFs raise a "scanned" notice.
+- **CSP and offline**: `layout.tsx` sets a CSP `<meta>` (no headers on GitHub Pages); `connect-src`
+  only allows the model hosts, so a new network destination must be added there or it fails. The
+  service worker (`public/sw.js`, registered in production with `NEXT_PUBLIC_BASE_PATH`) caches the
+  app shell; WebLLM caches the model. Bump `CACHE` in `sw.js` to purge old assets.
 - **SSR-safe browser checks**: `hasWebGPU` is read through `useSyncExternalStore` with a server
   snapshot of `true`; `ThemeControls` (reads `localStorage`/`matchMedia`) only renders after mount.
 - **Design tokens**: same system as `analytics-dashboard`. Tailwind 4 with no `tailwind.config` —

@@ -40,6 +40,8 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 - A filter dialog with checkboxes chooses **which categories** to anonymize (all on by default).
 - After anonymizing only the result is shown, with the placeholder → value map below; it lives **only in the tab**.
 - Models: Qwen3 4B (default), Llama 3.2 3B and Gemma 4 E2B, loaded on start and cached by the browser.
+- A **Content-Security-Policy** `<meta>` only lets the page talk to itself and the model hosts.
+- Installable **PWA** (`manifest.webmanifest` + `public/sw.js`): works offline once the model is downloaded.
 
 ## Project Structure
 

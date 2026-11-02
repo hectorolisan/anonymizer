@@ -63,6 +63,12 @@ export function AnonymizerApp() {
   // Model download, then one step per chunk the model reads.
   const fraction = a.phase === "loading" ? a.progress : a.chunks ? a.chunks.done / a.chunks.total : null;
 
+  // Offline after the first visit; off in dev so stale caches don't hide changes.
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register(`${process.env.NEXT_PUBLIC_BASE_PATH}/sw.js`).catch(() => {});
+  }, []);
+
   // The mapping only lives in this tab: warn before closing it.
   useEffect(() => {
     if (!a.result) return;
