@@ -21,7 +21,7 @@ import { CopyButton, NoticeBox, Placeholder, type Notice } from "./ui";
 const noop = () => () => {};
 
 const bar = "flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t px-5 py-4";
-const body = "min-h-[28rem] w-full px-5 pb-5 text-sm leading-7";
+const body = "min-h-64 w-full flex-1 px-5 pb-5 text-sm leading-7";
 const primaryBtn =
   "inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60";
 const ghostBtn =
@@ -95,9 +95,9 @@ export function AnonymizerApp() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 py-6 sm:px-6">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-6 sm:px-6">
         {result ? (
-          <section aria-labelledby="result-title" className="card overflow-hidden">
+          <section aria-labelledby="result-title" className="card flex flex-1 flex-col overflow-hidden">
             <div className="flex h-12 items-center justify-between gap-4 px-5">
               <h2 id="result-title" className={labelClass}>
                 Anonimizado
@@ -131,7 +131,7 @@ export function AnonymizerApp() {
         ) : (
           <section
             aria-labelledby="input-title"
-            className={`card overflow-hidden transition-shadow ${dragging ? "ring-2 ring-primary" : ""}`}
+            className={`card flex flex-1 flex-col overflow-hidden transition-shadow ${dragging ? "ring-2 ring-primary" : ""}`}
             onDragOver={(e) => {
               e.preventDefault();
               setDragging(true);
@@ -176,7 +176,7 @@ export function AnonymizerApp() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Escribe, pega o suelta un documento…"
-              className={`${body} block resize-none bg-transparent outline-none placeholder:text-muted-foreground`}
+              className={`${body} resize-none bg-transparent outline-none placeholder:text-muted-foreground`}
             />
 
             {a.phase === "loading" && (
@@ -214,7 +214,7 @@ export function AnonymizerApp() {
         {result && result.mapping.length > 0 && <MappingTable mapping={result.mapping} />}
       </main>
 
-      <footer className="px-4 py-6">
+      <footer className="px-4 pb-5">
         <Credit />
       </footer>
     </div>
