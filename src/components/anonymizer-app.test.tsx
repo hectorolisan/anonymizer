@@ -34,19 +34,20 @@ test("anonimiza y muestra el mapa de equivalencias", async () => {
   expect(engine.loadModel).toHaveBeenCalledWith("Qwen3-4B-q4f16_1-MLC", expect.any(Function));
   expect(engine.extractEntities).toHaveBeenCalledWith("Qwen3-4B-q4f16_1-MLC", "Ana Pérez escribe desde [EMAIL_1]");
   expect(screen.getByTestId("output").textContent).toBe("[PERSONA_1] escribe desde [EMAIL_1]");
-  expect(screen.getByText("2 datos tapados", { exact: false })).toBeTruthy();
+  expect(screen.getByText("2 datos ·", { exact: false })).toBeTruthy();
   expect(screen.getByRole("status", { name: "" }).textContent).toContain("Modelo listo");
 
   const rows = screen.getAllByRole("row").slice(1).map((r) => r.textContent);
   expect(rows).toEqual(["[EMAIL_1]ana@ejemplo.comEmails", "[PERSONA_1]Ana PérezPersonas"]);
 });
 
-test("los chips activan y desactivan categorías; sin categorías del modelo no se carga", async () => {
+test("las casillas activan y desactivan categorías; sin categorías del modelo no se carga", async () => {
   render(<AnonymizerApp />);
-  const chip = (name: string) => screen.getByRole("button", { name });
-  expect(chip("Importes").getAttribute("aria-pressed")).toBe("false");
-  for (const name of ["Personas", "Empresas", "Direcciones"]) fireEvent.click(chip(name));
-  expect(chip("Personas").getAttribute("aria-pressed")).toBe("false");
+  const box = (name: string) => screen.getByRole<HTMLInputElement>("checkbox", { name });
+  expect(box("Importes").checked).toBe(false);
+  expect(box("Personas").checked).toBe(true);
+  for (const name of ["Personas", "Empresas", "Direcciones"]) fireEvent.click(box(name));
+  expect(box("Personas").checked).toBe(false);
 
   await run("Llama al 612 345 678");
   expect(engine.loadModel).not.toHaveBeenCalled();
@@ -70,5 +71,5 @@ test("Limpiar vuelve al estado vacío", async () => {
   await run("ana@ejemplo.com");
   fireEvent.click(screen.getByRole("button", { name: "Limpiar" }));
   expect((input() as HTMLTextAreaElement).value).toBe("");
-  expect(screen.getByText("Aquí verás tu texto limpio")).toBeTruthy();
+  expect(screen.getByText("Aquí aparecerá el texto", { exact: false })).toBeTruthy();
 });

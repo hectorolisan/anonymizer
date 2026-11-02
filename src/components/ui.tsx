@@ -4,7 +4,6 @@ import { Check, Copy } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import type { MappingItem } from "@/lib/anonymize";
 import { CATEGORY_COLORS } from "@/lib/utils";
-import { controlClass } from "./theme-controls";
 
 export function Placeholder({ item }: { item: MappingItem }) {
   return (
@@ -19,7 +18,7 @@ export function CopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      className={`${controlClass} h-8`}
+      className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
       disabled={!text}
       onClick={async () => {
         await navigator.clipboard.writeText(text);
@@ -27,7 +26,7 @@ export function CopyButton({ text }: { text: string }) {
         setTimeout(() => setCopied(false), 2000);
       }}
     >
-      {copied ? <Check className="size-4 text-good" /> : <Copy className="size-4" />}
+      {copied ? <Check className="size-3.5 text-good" /> : <Copy className="size-3.5" />}
       {copied ? "Copiado" : "Copiar"}
     </button>
   );
