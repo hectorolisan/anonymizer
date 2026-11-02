@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "@fontsource-variable/bricolage-grotesque/opsz.css";
 import "@fontsource/poppins/latin-400.css";
 import "@fontsource/poppins/latin-500.css";
@@ -17,12 +18,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // THEME_SCRIPT sets class/style on <html> before hydration.
     <html lang="es" className="h-full" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-      </head>
       {/* Extensions (e.g. ColorZilla) inject attributes on <body> before hydration. */}
       <body className="min-h-full" suppressHydrationWarning>
         {children}
+        <Script id="theme" strategy="beforeInteractive">
+          {THEME_SCRIPT}
+        </Script>
       </body>
     </html>
   );
