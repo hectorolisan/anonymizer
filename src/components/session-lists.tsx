@@ -108,7 +108,7 @@ export function SessionLists({ value, onChange }: Props) {
                 aria-label="Valor a anonimizar siempre"
                 value={always}
                 onChange={(e) => setAlways(e.target.value)}
-                placeholder="Proyecto Faro"
+                placeholder="P. ej. un proyecto o un apodo"
                 className={input}
               />
               <select
@@ -157,7 +157,7 @@ export function SessionLists({ value, onChange }: Props) {
                 aria-label="Valor a no anonimizar nunca"
                 value={never}
                 onChange={(e) => setNever(e.target.value)}
-                placeholder="Santa Cruz"
+                placeholder="P. ej. el nombre de tu empresa"
                 className={input}
               />
               <button type="submit" className={addBtn}>
