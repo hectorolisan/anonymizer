@@ -27,7 +27,7 @@ async function run(text: string) {
   await act(async () => fireEvent.click(anonymizeBtn()));
 }
 
-test("anonimiza, muestra el mapa y des-anonimiza", async () => {
+test("anonimiza y muestra el mapa de equivalencias", async () => {
   render(<AnonymizerApp />);
   await run("Ana Pérez escribe desde ana@ejemplo.com");
 
@@ -37,8 +37,8 @@ test("anonimiza, muestra el mapa y des-anonimiza", async () => {
   expect(screen.getByText("2 datos tapados", { exact: false })).toBeTruthy();
   expect(screen.getByRole("status", { name: "" }).textContent).toContain("Modelo listo");
 
-  fireEvent.change(screen.getByLabelText("Respuesta con marcadores"), { target: { value: "Hola [PERSONA_1]" } });
-  expect(screen.getByLabelText("Texto con los valores reales").textContent).toBe("Hola Ana Pérez");
+  const rows = screen.getAllByRole("row").slice(1).map((r) => r.textContent);
+  expect(rows).toEqual(["[EMAIL_1]ana@ejemplo.comEmails", "[PERSONA_1]Ana PérezPersonas"]);
 });
 
 test("los chips activan y desactivan categorías; sin categorías del modelo no se carga", async () => {

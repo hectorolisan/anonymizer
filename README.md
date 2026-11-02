@@ -1,6 +1,6 @@
 # Anonimizador
 
-Hide sensitive data **before** pasting a text into a cloud AI, and get it back afterwards.
+Hide sensitive data **before** pasting a text into a cloud AI.
 Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU — no server, no API keys, the text never leaves the tab.
 
 - **Next.js 16** — static export (`output: "export"`), no backend.
@@ -31,7 +31,6 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 - The same entity always gets the **same placeholder**.
 - Chips choose **which categories** to anonymize (all but amounts by default).
 - The placeholder → value map is shown in a collapsible table and lives **only in the tab**.
-- **Des-anonimizar**: paste the AI's answer with placeholders to restore the real values.
 - Models: Qwen3 1.7B, Qwen3 4B (default) and Llama 3.2 3B, downloaded once and cached by the browser.
 
 ## Project Structure
@@ -49,7 +48,6 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 │   ├── components/
 │   │   ├── anonymizer-app.tsx      # Header, input, result and layout
 │   │   ├── credit.tsx              # Footer credit
-│   │   ├── deanonymize-panel.tsx   # Restore real values
 │   │   ├── mapping-table.tsx       # Placeholder → original table
 │   │   ├── model-status.tsx        # Model selector + WebGPU/download status
 │   │   ├── theme-controls.tsx      # Light/dark + primary color picker
@@ -57,7 +55,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 │   ├── hooks/
 │   │   └── use-anonymizer.ts       # Model loading + anonymize state
 │   └── lib/
-│       ├── anonymize.ts            # Regex rules, prompt, dedup, chunks, de-anonymize
+│       ├── anonymize.ts            # Regex rules, prompt, dedup, chunks
 │       ├── engine.ts               # Model list + WebLLM engine + entity extraction
 │       ├── engine.worker.ts        # Web Worker running the engine
 │       ├── extract.ts              # .txt / .md / .docx / .pdf → text

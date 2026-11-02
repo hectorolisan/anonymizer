@@ -1,6 +1,6 @@
 "use client";
 
-import { FileUp, Loader2, Lock, ShieldCheck } from "lucide-react";
+import { FileUp, Loader2, Lock } from "lucide-react";
 import { useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { useAnonymizer } from "@/hooks/use-anonymizer";
 import { CATEGORIES, CATEGORY_LABELS, DEFAULT_CATEGORIES, segments, type Category } from "@/lib/anonymize";
@@ -8,7 +8,6 @@ import { hasWebGPU } from "@/lib/engine";
 import { ACCEPT, ExtractionError, extractText } from "@/lib/extract";
 import { CATEGORY_COLORS, labelClass } from "@/lib/utils";
 import { Credit } from "./credit";
-import { DeanonymizePanel } from "./deanonymize-panel";
 import { MappingTable } from "./mapping-table";
 import { ModelStatus } from "./model-status";
 import { ThemeControls } from "./theme-controls";
@@ -81,14 +80,9 @@ export function AnonymizerApp() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-6 sm:px-6">
-        <p className="flex w-fit items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-          <ShieldCheck className="size-4" aria-hidden />
-          100 % local · El texto y el modelo nunca salen de tu navegador
-        </p>
-
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="card flex flex-col gap-4 p-5" aria-labelledby="input-title">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex h-8 items-center justify-between gap-4">
               <h2 id="input-title" className="text-lg">
                 Entrada
               </h2>
@@ -192,7 +186,7 @@ export function AnonymizerApp() {
           </section>
 
           <section className="card flex flex-col gap-4 p-5" aria-labelledby="output-title">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex h-8 items-center justify-between gap-4">
               <h2 id="output-title" className="text-lg">
                 Resultado anonimizado
               </h2>
@@ -230,7 +224,6 @@ export function AnonymizerApp() {
         </div>
 
         <MappingTable mapping={a.result?.mapping ?? []} />
-        <DeanonymizePanel mapping={a.result?.mapping ?? []} />
       </main>
 
       <footer className="px-4 py-6">

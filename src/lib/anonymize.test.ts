@@ -4,7 +4,6 @@ import {
   AnonymizeError,
   chunk,
   DEFAULT_CATEGORIES,
-  deanonymize,
   needsModel,
   normalize,
   parseEntities,
@@ -115,14 +114,6 @@ describe("utilidades", () => {
     expect(normalize("EMAIL", " A@B.ES ")).toBe("a@b.es");
     expect(normalize("DNI", "45.812.339-k")).toBe("45.812.339K");
     expect(normalize("PERSONA", "Ana   PÉREZ")).toBe("ana pérez");
-  });
-
-  it("deanonymize recupera los valores y respeta marcadores desconocidos", () => {
-    const mapping = [
-      { placeholder: "[PERSONA_1]", original: "Ana", category: "PERSONA" as const },
-      { placeholder: "[PERSONA_10]", original: "Luis", category: "PERSONA" as const },
-    ];
-    expect(deanonymize("[PERSONA_10] y [PERSONA_1] ([OTRO_1])", mapping)).toBe("Luis y Ana ([OTRO_1])");
   });
 
   it("segments solo resalta marcadores del mapa", () => {

@@ -16,7 +16,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 **Anonimizador** replaces sensitive data (names, companies, emails, phones, DNI/NIE, amounts,
 addresses, bank accounts) with colour placeholders like `[PERSONA_1]` before pasting a text into a
-cloud AI, and restores the real values afterwards. Everything runs in the browser: regex plus an LLM
+cloud AI, and lists which real value each placeholder hides. Everything runs in the browser: regex plus an LLM
 on WebGPU via WebLLM (`@mlc-ai/web-llm`). Next.js 16 static export + React 19 + Tailwind CSS 4, no
 backend. Port of [beailabs/anonimizador](https://github.com/beailabs/anonimizador) (Python + Ollama).
 All visible content is in Spanish. Vitest covers `src/lib` and `AnonymizerApp` (`*.test.ts(x)`,
@@ -42,8 +42,8 @@ and blocks build scripts for `sharp` / `unrs-resolver` — keep both when adding
 ## Architecture
 
 `src/app/page.tsx` renders `<AnonymizerApp />` (`src/components/anonymizer-app.tsx`), a client
-component with the header (model status + theme controls), input card, result card, mapping table,
-de-anonymize panel and `Credit` footer. State lives in `src/hooks/use-anonymizer.ts`; the pipeline is
+component with the header (model status + theme controls), input card, result card, mapping table
+and `Credit` footer. State lives in `src/hooks/use-anonymizer.ts`; the pipeline is
 `src/lib/anonymize.ts`; the model layer is `src/lib/engine.ts`; file reading is `src/lib/extract.ts`.
 
 Patterns that span files:
@@ -59,8 +59,8 @@ Patterns that span files:
   whole words only, and ignored if not literally in the text (hallucinations).
 - **Placeholders**: `[CATEGORY_N]`, numbered per category; `normalize()` is the dedup key so the same
   entity always gets the same placeholder. `segments()` highlights only placeholders present in the
-  mapping (not ones typed in the original); `deanonymize()` replaces by exact token, so
-  `[PERSONA_1]` never clobbers `[PERSONA_10]`.
+  mapping (not ones typed in the original). The mapping table is the only way back from a
+  placeholder to its real value.
 - **Engine in a Web Worker**: `engine.ts` lazily creates one `WebWorkerMLCEngine` backed by
   `engine.worker.ts`; `loadModel()` is a no-op when the model is already loaded. `extractEntities()`
   uses `response_format: json_object` with `ENTITIES_SCHEMA`, `temperature: 0`, Qwen3 thinking off,

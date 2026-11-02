@@ -161,11 +161,6 @@ export async function anonymize(text: string, categories: Iterable<Category>, ex
 
 const PLACEHOLDER_RE = /\[([A-Z]+)_\d+\]/g;
 
-export function deanonymize(text: string, mapping: MappingItem[]) {
-  const map = new Map(mapping.map((m) => [m.placeholder, m.original]));
-  return text.replace(PLACEHOLDER_RE, (p) => map.get(p) ?? p);
-}
-
 export type Segment = string | MappingItem;
 
 // Only placeholders in the mapping are highlighted, not ones typed in the original.
