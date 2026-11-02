@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { anonymize, AnonymizeError, CancelledError, needsModel, type Category, type MappingItem } from "@/lib/anonymize";
-import { DEFAULT_MODEL, extractEntities, hasWebGPU, interrupt, loadedModel, loadModel } from "@/lib/engine";
+import { DEFAULT_MODEL, deleteCached, extractEntities, hasWebGPU, interrupt, loadedModel, loadModel } from "@/lib/engine";
 
 export type Phase = "idle" | "loading" | "running";
 export type Result = { anonymized: string; mapping: MappingItem[]; ms: number };
@@ -73,10 +73,16 @@ export function useAnonymizer() {
     interrupt();
   };
 
+  // Frees disk space; the selected model downloads again on the next run.
+  const removeCached = async (id: string) => {
+    await deleteCached(id);
+    if (loadedModel() !== ready) setReady(null);
+  };
+
   const reset = () => {
     setResult(null);
     setError(null);
   };
 
-  return { model, setModel, ready, phase, progress, chunks, result, error, run, cancel, reset };
+  return { model, setModel, ready, phase, progress, chunks, result, error, run, cancel, removeCached, reset };
 }

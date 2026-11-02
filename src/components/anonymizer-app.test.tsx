@@ -13,6 +13,8 @@ vi.mock("@/lib/engine", () => ({
   hasWebGPU: vi.fn(() => true),
   loadedModel: () => state.loaded,
   interrupt: vi.fn(),
+  isCached: vi.fn(async () => false),
+  deleteCached: vi.fn(async () => { state.loaded = null; }),
   loadModel: vi.fn(async (id: string, onProgress: (r: { progress: number }) => void) => {
     onProgress({ progress: 1 });
     state.loaded = id;
@@ -137,6 +139,16 @@ test("Ctrl+Enter anonimiza y Cancelar vuelve al editor sin error", async () => {
   await act(async () => finish());
   expect(input().value).toBe("Ana Pérez");
   expect(screen.queryByRole("alert")).toBeNull();
+});
+
+test("borra de la caché un modelo descargado", async () => {
+  vi.mocked(engine.isCached).mockResolvedValue(true);
+  await mount();
+  const picker = document.getElementById("model-picker")!;
+  await act(async () => picker.dispatchEvent(Object.assign(new Event("beforetoggle"), { newState: "open" })));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: /Borrar Qwen3-4B/, hidden: true })));
+  expect(engine.deleteCached).toHaveBeenCalledWith("Qwen3-4B-q4f16_1-MLC");
+  expect(screen.getByRole("status").textContent).toContain("Modelo sin cargar");
 });
 
 test("Nuevo texto vuelve al editor vacío", async () => {

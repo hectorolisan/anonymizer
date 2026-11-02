@@ -104,6 +104,7 @@ export function AnonymizerApp() {
               phase={a.phase}
               progress={a.progress}
               onModel={a.setModel}
+              onDelete={a.removeCached}
             />
             {client && <ThemeControls />}
           </div>

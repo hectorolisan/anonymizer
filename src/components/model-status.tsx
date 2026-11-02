@@ -1,9 +1,9 @@
 "use client";
 
-import { Check, ChevronDown } from "lucide-react";
-import { useRef } from "react";
+import { Check, ChevronDown, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
 import type { Phase } from "@/hooks/use-anonymizer";
-import { MODELS, modelName } from "@/lib/engine";
+import { isCached, MODELS, modelName } from "@/lib/engine";
 import { controlClass } from "./theme-controls";
 import { anchorUnder } from "./ui";
 
@@ -14,13 +14,15 @@ type Props = {
   phase: Phase;
   progress: number;
   onModel: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
 };
 
 const gb = (mb?: number) => `${((mb ?? 0) / 1024).toFixed(1)} GB`;
 
-export function ModelStatus({ webgpu, model, ready, phase, progress, onModel }: Props) {
+export function ModelStatus({ webgpu, model, ready, phase, progress, onModel, onDelete }: Props) {
   const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  const [cached, setCached] = useState<Record<string, boolean>>({});
   const current = MODELS.find((m) => m.model_id === model);
   const [dot, text] = !webgpu
     ? ["bg-bad", "Sin WebGPU · solo regex"]
@@ -30,6 +32,9 @@ export function ModelStatus({ webgpu, model, ready, phase, progress, onModel }: 
         ? ["bg-good", "Modelo listo"]
         : ["bg-muted-foreground", "Modelo sin cargar"];
 
+  const refresh = async () =>
+    setCached(Object.fromEntries(await Promise.all(MODELS.map(async (m) => [m.model_id, await isCached(m.model_id)]))));
+
   return (
     <div className="flex items-center gap-2">
       <button
@@ -37,7 +42,6 @@ export function ModelStatus({ webgpu, model, ready, phase, progress, onModel }: 
         type="button"
         popoverTarget="model-picker"
         aria-label="Modelo"
-        aria-haspopup="listbox"
         disabled={!webgpu || phase !== "idle"}
         className={controlClass}
       >
@@ -49,28 +53,50 @@ export function ModelStatus({ webgpu, model, ready, phase, progress, onModel }: 
         ref={list}
         id="model-picker"
         popover="auto"
-        role="listbox"
+        role="group"
         aria-label="Modelo"
-        onBeforeToggle={(e) => e.newState === "open" && anchorUnder(trigger.current, e.currentTarget, "left")}
-        className="card absolute inset-auto m-0 w-64 p-1 text-foreground"
+        onBeforeToggle={(e) => {
+          if (e.newState !== "open") return;
+          anchorUnder(trigger.current, e.currentTarget, "left");
+          void refresh();
+        }}
+        className="card absolute inset-auto m-0 w-72 p-1 text-foreground"
       >
         {MODELS.map((m) => (
-          <button
-            key={m.model_id}
-            type="button"
-            role="option"
-            aria-selected={m.model_id === model}
-            onClick={() => {
-              onModel(m.model_id);
-              list.current?.hidePopover();
-            }}
-            className="group flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none aria-selected:text-primary"
-          >
-            <span className="font-medium">{modelName(m.model_id)}</span>
-            <span className="font-mono text-xs text-muted-foreground">{gb(m.vram_required_MB)}</span>
-            <Check className="ml-auto size-4 opacity-0 group-aria-selected:opacity-100" aria-hidden />
-          </button>
+          <div key={m.model_id} className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-pressed={m.model_id === model}
+              onClick={() => {
+                onModel(m.model_id);
+                list.current?.hidePopover();
+              }}
+              className="group flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none aria-pressed:text-primary"
+            >
+              <span className="font-medium">{modelName(m.model_id)}</span>
+              <span className="font-mono text-xs text-muted-foreground">{gb(m.vram_required_MB)}</span>
+              {cached[m.model_id] && <span className="text-xs text-muted-foreground">· descargado</span>}
+              <Check className="ml-auto size-4 shrink-0 opacity-0 group-aria-pressed:opacity-100" aria-hidden />
+            </button>
+            {cached[m.model_id] && (
+              <button
+                type="button"
+                aria-label={`Borrar ${modelName(m.model_id)} de la caché`}
+                title="Borrar de la caché"
+                onClick={async () => {
+                  await onDelete(m.model_id);
+                  await refresh();
+                }}
+                className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-bad"
+              >
+                <Trash2 className="size-4" aria-hidden />
+              </button>
+            )}
+          </div>
         ))}
+        <p className="border-t px-2.5 pt-2 pb-1.5 text-xs text-muted-foreground">
+          Los modelos se guardan en el navegador. Bórralos para liberar espacio.
+        </p>
       </div>
       <span
         role="status"
