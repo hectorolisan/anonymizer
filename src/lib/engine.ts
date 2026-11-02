@@ -8,8 +8,13 @@ import {
 } from "@mlc-ai/web-llm";
 import { AnonymizeError, buildPrompt, ENTITIES_SCHEMA, parseEntities, type Entities } from "./anonymize";
 
-// Qwen3-4B matches the reference (qwen3:4b on Ollama); 1.7B is lighter, Llama an alternative.
-const MODEL_IDS = ["Qwen3-1.7B-q4f16_1-MLC", "Qwen3-4B-q4f16_1-MLC", "Llama-3.2-3B-Instruct-q4f16_1-MLC"];
+// Qwen3-4B matches the reference (qwen3:4b on Ollama); the rest are lighter or alternative families.
+const MODEL_IDS = [
+  "Qwen3-1.7B-q4f16_1-MLC",
+  "Qwen3-4B-q4f16_1-MLC",
+  "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+  "gemma-4-E2B-it-q4f16_1-MLC",
+];
 
 export const MODELS = MODEL_IDS.map((id) =>
   prebuiltAppConfig.model_list.find((m) => m.model_id === id),
@@ -17,7 +22,7 @@ export const MODELS = MODEL_IDS.map((id) =>
 
 export const DEFAULT_MODEL = "Qwen3-4B-q4f16_1-MLC";
 
-export const modelName = (id: string) => id.replace(/-q4f16_1-MLC$/, "").replace(/-Instruct$/, "");
+export const modelName = (id: string) => id.replace(/-q4f16_1-MLC$/, "").replace(/-(Instruct|it)$/, "");
 
 export const hasWebGPU = () => typeof navigator !== "undefined" && "gpu" in navigator;
 

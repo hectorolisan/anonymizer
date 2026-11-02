@@ -4,72 +4,89 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import * as engine from "@/lib/engine";
 import { AnonymizerApp } from "./anonymizer-app";
 
+const state = vi.hoisted(() => ({ loaded: null as string | null }));
+
 vi.mock("@/lib/engine", () => ({
   DEFAULT_MODEL: "Qwen3-4B-q4f16_1-MLC",
   MODELS: [{ model_id: "Qwen3-4B-q4f16_1-MLC", vram_required_MB: 3431 }],
   modelName: (id: string) => id.replace(/-q4f16_1-MLC$/, ""),
   hasWebGPU: vi.fn(() => true),
-  loadedModel: vi.fn(() => null),
-  loadModel: vi.fn(async (_id: string, onProgress: (r: { progress: number }) => void) => onProgress({ progress: 1 })),
+  loadedModel: () => state.loaded,
+  loadModel: vi.fn(async (id: string, onProgress: (r: { progress: number }) => void) => {
+    onProgress({ progress: 1 });
+    state.loaded = id;
+  }),
   extractEntities: vi.fn(async () => ({ personas: ["Ana Pérez"], empresas: [], direcciones: [] })),
 }));
 
 vi.stubGlobal("matchMedia", () => ({ matches: false }));
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(engine.hasWebGPU).mockReturnValue(true);
+  state.loaded = null;
+});
 afterEach(cleanup);
 
-const input = () => screen.getByLabelText("Texto a anonimizar");
-const anonymizeBtn = () => screen.getByRole("button", { name: /Anonimizar/ });
+const input = () => screen.getByLabelText<HTMLTextAreaElement>("Texto a anonimizar");
+const button = (name: string | RegExp) => screen.getByRole("button", { name });
+
+async function mount() {
+  await act(async () => render(<AnonymizerApp />));
+}
 
 async function run(text: string) {
   fireEvent.change(input(), { target: { value: text } });
-  await act(async () => fireEvent.click(anonymizeBtn()));
+  await act(async () => fireEvent.click(button(/Anonimizar/)));
 }
 
-test("anonimiza y muestra el mapa de equivalencias", async () => {
-  render(<AnonymizerApp />);
-  await run("Ana Pérez escribe desde ana@ejemplo.com");
+test("carga el modelo al abrir y muestra solo el resultado tras anonimizar", async () => {
+  await mount();
+  expect(engine.loadModel).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("status").textContent).toContain("Modelo listo");
 
-  expect(engine.loadModel).toHaveBeenCalledWith("Qwen3-4B-q4f16_1-MLC", expect.any(Function));
+  await run("Ana Pérez escribe desde ana@ejemplo.com");
+  expect(engine.loadModel).toHaveBeenCalledTimes(1);
   expect(engine.extractEntities).toHaveBeenCalledWith("Qwen3-4B-q4f16_1-MLC", "Ana Pérez escribe desde [EMAIL_1]");
+  expect(screen.queryByLabelText("Texto a anonimizar")).toBeNull();
   expect(screen.getByTestId("output").textContent).toBe("[PERSONA_1] escribe desde [EMAIL_1]");
   expect(screen.getByText("2 datos ·", { exact: false })).toBeTruthy();
-  expect(screen.getByRole("status", { name: "" }).textContent).toContain("Modelo listo");
 
   const rows = screen.getAllByRole("row").slice(1).map((r) => r.textContent);
   expect(rows).toEqual(["[EMAIL_1]ana@ejemplo.comEmails", "[PERSONA_1]Ana PérezPersonas"]);
+
+  fireEvent.click(button("Editar texto"));
+  expect(input().value).toBe("Ana Pérez escribe desde ana@ejemplo.com");
 });
 
-test("las casillas activan y desactivan categorías; sin categorías del modelo no se carga", async () => {
-  render(<AnonymizerApp />);
-  const box = (name: string) => screen.getByRole<HTMLInputElement>("checkbox", { name });
-  expect(box("Importes").checked).toBe(false);
-  expect(box("Personas").checked).toBe(true);
-  for (const name of ["Personas", "Empresas", "Direcciones"]) fireEvent.click(box(name));
-  expect(box("Personas").checked).toBe(false);
+test("todas las categorías activas por defecto; desactivadas no se tapan", async () => {
+  await mount();
+  for (const c of ["Personas", "Importes", "Cuentas"]) expect(button(c).getAttribute("aria-pressed")).toBe("true");
+  for (const c of ["Personas", "Empresas", "Direcciones", "Teléfonos"]) fireEvent.click(button(c));
+  expect(button("Personas").getAttribute("aria-pressed")).toBe("false");
 
-  await run("Llama al 612 345 678");
-  expect(engine.loadModel).not.toHaveBeenCalled();
-  expect(screen.getByTestId("output").textContent).toBe("Llama al [TELEFONO_1]");
+  await run("Ana paga 300 euros desde el 612 345 678");
+  expect(engine.extractEntities).not.toHaveBeenCalled();
+  expect(screen.getByTestId("output").textContent).toBe("Ana paga [IMPORTE_1] desde el 612 345 678");
 });
 
 test("errores claros: texto vacío y navegador sin WebGPU", async () => {
-  render(<AnonymizerApp />);
+  vi.mocked(engine.hasWebGPU).mockReturnValue(false);
+  await mount();
+  expect(engine.loadModel).not.toHaveBeenCalled();
+  expect(screen.getByRole("status").textContent).toContain("Sin WebGPU");
+
   await run("   ");
   expect(screen.getByRole("alert").textContent).toBe("No hay texto para anonimizar.");
 
-  vi.mocked(engine.hasWebGPU).mockReturnValue(false);
   await run("Ana Pérez");
   expect(screen.getByRole("alert").textContent).toContain("no tiene WebGPU");
   expect(engine.extractEntities).not.toHaveBeenCalled();
 });
 
-test("Limpiar vuelve al estado vacío", async () => {
-  vi.mocked(engine.hasWebGPU).mockReturnValue(true);
-  render(<AnonymizerApp />);
+test("Nuevo texto vuelve al editor vacío", async () => {
+  await mount();
   await run("ana@ejemplo.com");
-  fireEvent.click(screen.getByRole("button", { name: "Limpiar" }));
-  expect((input() as HTMLTextAreaElement).value).toBe("");
-  expect(screen.getByText("Aquí aparecerá el texto", { exact: false })).toBeTruthy();
+  fireEvent.click(button("Nuevo texto"));
+  expect(input().value).toBe("");
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { anonymize, AnonymizeError, needsModel, type Category, type MappingItem } from "@/lib/anonymize";
 import { DEFAULT_MODEL, extractEntities, hasWebGPU, loadedModel, loadModel } from "@/lib/engine";
 
@@ -18,8 +18,8 @@ export function useAnonymizer() {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function ensureModel() {
-    if (loadedModel() === model) return;
+  async function ensureModel(id: string) {
+    if (loadedModel() === id) return;
     if (!hasWebGPU())
       throw new AnonymizeError(
         "Tu navegador no tiene WebGPU. Usa Chrome o Edge recientes, o desmarca Personas, Empresas y Direcciones (el resto funciona sin modelo).",
@@ -27,26 +27,33 @@ export function useAnonymizer() {
     setPhase("loading");
     setProgress(0);
     setReady(null);
-    await loadModel(model, (r) => setProgress(r.progress));
-    setReady(model);
+    await loadModel(id, (r) => setProgress(r.progress));
+    setReady(id);
   }
 
+  // true on success, so the UI can switch to the result view.
   async function guard(fn: () => Promise<void>) {
     setError(null);
     try {
       await fn();
+      return true;
     } catch (err) {
       setError(message(err));
+      return false;
     } finally {
       setPhase("idle");
     }
   }
 
-  const load = () => guard(ensureModel);
+  // Load the selected model up front so the first anonymisation is fast.
+  useEffect(() => {
+    if (!hasWebGPU()) return;
+    void Promise.resolve().then(() => guard(() => ensureModel(model)));
+  }, [model]);
 
   const run = (text: string, categories: Category[]) =>
     guard(async () => {
-      if (text.trim() && categories.length && needsModel(categories)) await ensureModel();
+      if (text.trim() && categories.length && needsModel(categories)) await ensureModel(model);
       setPhase("running");
       const t0 = performance.now();
       const r = await anonymize(text, categories, (part) => extractEntities(model, part));
@@ -58,5 +65,5 @@ export function useAnonymizer() {
     setError(null);
   };
 
-  return { model, setModel, ready, phase, progress, result, error, load, run, reset };
+  return { model, setModel, ready, phase, progress, result, error, run, reset };
 }

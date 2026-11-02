@@ -17,15 +17,6 @@
   --bad: #d03b3b;
   --warn: #a35f00;
 
-  /* paleta categórica validada (CVD), un color por categoría */
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --series-4: #eda100;
-  --series-5: #e87ba4;
-  --series-6: #008300;
-  --series-7: #6250d6;
-  --series-8: #e34948;
 }
 
 .dark {
@@ -42,14 +33,6 @@
   --bad: #e66767;
   --warn: #e0a030;
 
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --series-3: #199e70;
-  --series-4: #c98500;
-  --series-5: #d55181;
-  --series-6: #008300;
-  --series-7: #9085e9;
-  --series-8: #e66767;
 }
 
 @theme inline {
@@ -73,12 +56,12 @@
   @apply rounded-xl border bg-card shadow-xs;
 }
 
-/* marcador [CATEGORIA_N]: --c lo pone el componente según la categoría */
+/* marcador [CATEGORIA_N], siempre en el color primario */
 @utility ph {
   @apply rounded-md px-1 py-px font-mono text-[0.9em] font-medium whitespace-nowrap;
-  color: var(--c);
-  background: color-mix(in oklab, var(--c) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c) 35%, transparent);
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent);
 }
 
 @layer base {

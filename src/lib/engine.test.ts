@@ -27,13 +27,14 @@ const reply = (content: string) => ({ choices: [{ message: { content } }] });
 beforeEach(() => vi.clearAllMocks());
 
 test("every curated model exists in prebuiltAppConfig", () => {
-  expect(engine.MODELS).toHaveLength(3);
+  expect(engine.MODELS).toHaveLength(4);
   expect(engine.MODELS.map((m) => m.model_id)).toContain(engine.DEFAULT_MODEL);
 });
 
 test("modelName strips quantisation and Instruct suffixes", () => {
   expect(engine.modelName("Qwen3-4B-q4f16_1-MLC")).toBe("Qwen3-4B");
   expect(engine.modelName("Llama-3.2-3B-Instruct-q4f16_1-MLC")).toBe("Llama-3.2-3B");
+  expect(engine.modelName("gemma-4-E2B-it-q4f16_1-MLC")).toBe("gemma-4-E2B");
 });
 
 test("loadModel skips reload when the model is already loaded", async () => {

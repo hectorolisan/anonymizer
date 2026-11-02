@@ -5,7 +5,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 
 - **Next.js 16** — static export (`output: "export"`), no backend.
 - **WebLLM** (`@mlc-ai/web-llm`) — in-browser inference on WebGPU, inside a Web Worker, with JSON-schema constrained output.
-- **Tailwind CSS 4** — design tokens, light/dark mode and selectable primary color (teal by default).
+- **Tailwind CSS 4** (PostCSS) — design tokens, light/dark mode and selectable primary color (teal by default).
 - **mammoth** + **pdfjs-dist** — local text extraction from `.docx` and `.pdf`.
 - **Fontsource** — self-hosted fonts.
 - **Vitest** + **Testing Library** — unit and component tests.
@@ -29,9 +29,9 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 | Cuentas     | Regex, full or partial IBAN and 20-digit CCC                      | `[CUENTA_1]`    |
 
 - The same entity always gets the **same placeholder**.
-- Chips choose **which categories** to anonymize (all but amounts by default).
-- The placeholder → value map is shown in a collapsible table and lives **only in the tab**.
-- Models: Qwen3 1.7B, Qwen3 4B (default) and Llama 3.2 3B, downloaded once and cached by the browser.
+- A toggle group chooses **which categories** to anonymize (all on by default).
+- After anonymizing only the result is shown, with the placeholder → value map below; it lives **only in the tab**.
+- Models: Qwen3 1.7B, Qwen3 4B (default), Llama 3.2 3B and Gemma 4 E2B, loaded on start and cached by the browser.
 
 ## Project Structure
 
@@ -49,7 +49,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 │   │   ├── anonymizer-app.tsx      # Header, input, result and layout
 │   │   ├── credit.tsx              # Footer credit
 │   │   ├── mapping-table.tsx       # Placeholder → original table
-│   │   ├── model-status.tsx        # Model selector + WebGPU/download status
+│   │   ├── model-status.tsx        # Model selector + WebGPU/loading status
 │   │   ├── theme-controls.tsx      # Light/dark + primary color picker
 │   │   └── ui.tsx                  # Placeholder chip, copy button, notices
 │   ├── hooks/
@@ -65,6 +65,7 @@ Everything runs **100% in the browser**: regex plus an LLM on the GPU via WebGPU
 ├── AGENTS.md
 ├── LICENSE
 ├── next.config.ts
+├── postcss.config.mjs
 ├── package.json
 └── README.md
 ```

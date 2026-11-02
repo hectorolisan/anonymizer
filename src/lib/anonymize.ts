@@ -18,8 +18,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   CUENTA: "Cuentas",
 };
 
-// Importes off by default: usually needed to work with the text.
-export const DEFAULT_CATEGORIES: Category[] = CATEGORIES.filter((c) => c !== "IMPORTE");
+export const DEFAULT_CATEGORIES: Category[] = [...CATEGORIES];
 
 const MODEL_CATEGORIES: Category[] = ["PERSONA", "EMPRESA", "DIRECCION"];
 

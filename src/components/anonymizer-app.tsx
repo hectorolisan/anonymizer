@@ -1,12 +1,12 @@
 "use client";
 
-import { Check, FileUp, Loader2, Lock } from "lucide-react";
-import { useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { ArrowLeft, FileUp, Loader2, Lock } from "lucide-react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { useAnonymizer } from "@/hooks/use-anonymizer";
 import { CATEGORIES, CATEGORY_LABELS, DEFAULT_CATEGORIES, segments, type Category } from "@/lib/anonymize";
 import { hasWebGPU } from "@/lib/engine";
 import { ACCEPT, ExtractionError, extractText } from "@/lib/extract";
-import { CATEGORY_COLORS, labelClass } from "@/lib/utils";
+import { labelClass } from "@/lib/utils";
 import { Credit } from "./credit";
 import { MappingTable } from "./mapping-table";
 import { ModelStatus } from "./model-status";
@@ -16,8 +16,12 @@ import { CopyButton, NoticeBox, Placeholder, type Notice } from "./ui";
 // Server snapshot = optimistic, so the static HTML matches the first client render.
 const noop = () => () => {};
 
-const paneHeader = "flex h-12 items-center justify-between gap-4 px-5";
-const paneBody = "min-h-96 flex-1 px-5 pb-5 text-sm leading-7";
+const bar = "flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t px-5 py-4";
+const body = "min-h-[28rem] w-full px-5 pb-5 text-sm leading-7";
+const primaryBtn =
+  "inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60";
+const ghostBtn =
+  "inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60";
 
 export function AnonymizerApp() {
   const client = useSyncExternalStore(noop, () => true, () => false);
@@ -25,10 +29,12 @@ export function AnonymizerApp() {
   const a = useAnonymizer();
   const [text, setText] = useState("");
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [showResult, setShowResult] = useState(false);
   const [fileNotice, setFileNotice] = useState<Notice | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const busy = a.phase !== "idle";
+  const result = showResult ? a.result : null;
 
   async function openFile(file?: File) {
     if (!file) return;
@@ -48,9 +54,17 @@ export function AnonymizerApp() {
   const toggle = (c: Category) =>
     setCategories((cs) => CATEGORIES.filter((x) => (x === c ? !cs.includes(c) : cs.includes(x))));
 
+  async function run() {
+    if (await a.run(text, categories)) {
+      setFileNotice(null);
+      setShowResult(true);
+    }
+  }
+
   const clear = () => {
     setText("");
     setFileNotice(null);
+    setShowResult(false);
     a.reset();
   };
 
@@ -75,7 +89,6 @@ export function AnonymizerApp() {
               phase={a.phase}
               progress={a.progress}
               onModel={a.setModel}
-              onLoad={a.load}
             />
             {client && <ThemeControls />}
           </div>
@@ -83,150 +96,131 @@ export function AnonymizerApp() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 py-6 sm:px-6">
-        <div className="card overflow-hidden">
-          <div className="grid divide-y lg:grid-cols-2 lg:divide-x lg:divide-y-0">
-            <section
-              aria-label="Original"
-              className={`flex flex-col transition-colors ${dragging ? "bg-primary/5 ring-2 ring-primary ring-inset" : ""}`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragging(true);
-              }}
-              onDragLeave={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragging(false);
-                openFile(e.dataTransfer.files[0]);
-              }}
-            >
-              <div className={paneHeader}>
-                <h2 className={labelClass}>Original</h2>
-                <button
-                  type="button"
-                  onClick={() => fileInput.current?.click()}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <FileUp className="size-3.5" aria-hidden />
-                  Abrir archivo
+        {result ? (
+          <section aria-labelledby="result-title" className="card overflow-hidden">
+            <div className="flex h-12 items-center justify-between gap-4 px-5">
+              <h2 id="result-title" className={labelClass}>
+                Anonimizado
+              </h2>
+              <span className="font-mono text-xs text-muted-foreground">
+                {result.mapping.length} datos · {(result.ms / 1000).toFixed(1)} s
+              </span>
+            </div>
+            <div data-testid="output" className={`${body} overflow-auto whitespace-pre-wrap`}>
+              {result.mapping.length ? (
+                segments(result.anonymized, result.mapping).map((s, i) =>
+                  typeof s === "string" ? s : <Placeholder key={i} item={s} />,
+                )
+              ) : (
+                <span className="text-muted-foreground">No se detectaron datos sensibles en el texto.</span>
+              )}
+            </div>
+            <div className={bar}>
+              <button type="button" onClick={() => setShowResult(false)} className={`${ghostBtn} -ml-3`}>
+                <ArrowLeft className="size-4" aria-hidden />
+                Editar texto
+              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={clear} className={ghostBtn}>
+                  Nuevo texto
                 </button>
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept={ACCEPT}
-                  hidden
-                  onChange={(e) => {
-                    openFile(e.target.files?.[0]);
-                    e.target.value = "";
-                  }}
-                />
+                <CopyButton text={result.anonymized} className={primaryBtn} />
               </div>
-              <textarea
-                aria-label="Texto a anonimizar"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Pega un contrato, un email o una transcripción, o suelta aquí un .txt, .md, .docx o .pdf."
-                className={`${paneBody} resize-none bg-transparent outline-none placeholder:text-muted-foreground`}
+            </div>
+          </section>
+        ) : (
+          <section
+            aria-labelledby="input-title"
+            className={`card overflow-hidden transition-shadow ${dragging ? "ring-2 ring-primary" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              openFile(e.dataTransfer.files[0]);
+            }}
+          >
+            <div className="flex h-12 items-center justify-between gap-4 px-5">
+              <h2 id="input-title" className={labelClass}>
+                Texto original
+              </h2>
+              <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <FileUp className="size-3.5" aria-hidden />
+                Abrir archivo
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept={ACCEPT}
+                hidden
+                onChange={(e) => {
+                  openFile(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
               />
-            </section>
-
-            <section aria-label="Anonimizado" className="flex flex-col bg-muted/30">
-              <div className={paneHeader}>
-                <h2 className={labelClass}>Anonimizado</h2>
-                <div className="flex items-center gap-3">
-                  {a.result && (
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {a.result.mapping.length} datos · {(a.result.ms / 1000).toFixed(1)} s
-                    </span>
-                  )}
-                  <CopyButton text={a.result?.anonymized ?? ""} />
-                </div>
-              </div>
-              <div data-testid="output" className={`${paneBody} overflow-auto whitespace-pre-wrap`}>
-                {a.result ? (
-                  a.result.mapping.length ? (
-                    segments(a.result.anonymized, a.result.mapping).map((s, i) =>
-                      typeof s === "string" ? s : <Placeholder key={i} item={s} />,
-                    )
-                  ) : (
-                    <span className="text-muted-foreground">No se detectaron datos sensibles en el texto.</span>
-                  )
-                ) : (
-                  <span className="text-muted-foreground">
-                    Aquí aparecerá el texto con cada dato sensible sustituido por una etiqueta de color.
-                  </span>
-                )}
-              </div>
-            </section>
-          </div>
-
-          {a.phase === "loading" && (
-            <div
-              role="progressbar"
-              aria-label="Descarga del modelo"
-              aria-valuenow={Math.round(a.progress * 100)}
-              className="h-0.5 bg-muted"
-            >
-              <div className="h-full bg-primary transition-[width]" style={{ width: `${a.progress * 100}%` }} />
             </div>
-          )}
+            <textarea
+              aria-label="Texto a anonimizar"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Pega un contrato, un email o una transcripción, o suelta aquí un .txt, .md, .docx o .pdf."
+              className={`${body} block resize-none bg-transparent outline-none placeholder:text-muted-foreground`}
+            />
 
-          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t px-5 py-4">
-            <fieldset className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
-              <legend className="sr-only">Qué anonimizar</legend>
-              {CATEGORIES.map((c) => (
-                <label
-                  key={c}
-                  className="group inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground transition-colors select-none hover:text-foreground has-checked:text-foreground"
-                >
-                  <input
-                    type="checkbox"
-                    checked={categories.includes(c)}
-                    onChange={() => toggle(c)}
-                    className="peer sr-only"
-                  />
-                  <span
-                    style={{ "--c": CATEGORY_COLORS[c] } as CSSProperties}
-                    className="grid size-4 place-items-center rounded-[5px] border border-muted-foreground/40 text-white transition-colors group-has-checked:border-(--c) group-has-checked:bg-(--c) peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
-                    aria-hidden
+            {a.phase === "loading" && (
+              <div
+                role="progressbar"
+                aria-label="Carga del modelo"
+                aria-valuenow={Math.round(a.progress * 100)}
+                className="h-0.5 bg-muted"
+              >
+                <div className="h-full bg-primary transition-[width]" style={{ width: `${a.progress * 100}%` }} />
+              </div>
+            )}
+
+            <div className={bar}>
+              <div role="group" aria-label="Qué anonimizar" className="flex flex-wrap gap-1 rounded-lg border bg-muted p-1">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-pressed={categories.includes(c)}
+                    onClick={() => toggle(c)}
+                    className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary aria-pressed:bg-card aria-pressed:text-primary aria-pressed:shadow-xs"
                   >
-                    <Check className="size-3 opacity-0 group-has-checked:opacity-100" strokeWidth={3} />
-                  </span>
-                  {CATEGORY_LABELS[c]}
-                </label>
-              ))}
-            </fieldset>
-
-            <div className="ml-auto flex items-center gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={clear}
-                className="h-9 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
-              >
-                Limpiar
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => a.run(text, categories)}
-                className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-              >
-                {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
-                {a.phase === "loading"
-                  ? `Descargando modelo · ${Math.round(a.progress * 100)} %`
-                  : a.phase === "running"
-                    ? "Anonimizando…"
-                    : "Anonimizar"}
-              </button>
+                    {CATEGORY_LABELS[c]}
+                  </button>
+                ))}
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <button type="button" disabled={busy || !text} onClick={clear} className={ghostBtn}>
+                  Limpiar
+                </button>
+                <button type="button" disabled={busy} onClick={run} className={primaryBtn}>
+                  {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Lock className="size-4" aria-hidden />}
+                  {a.phase === "loading"
+                    ? `Cargando modelo · ${Math.round(a.progress * 100)} %`
+                    : a.phase === "running"
+                      ? "Anonimizando…"
+                      : "Anonimizar"}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
+          </section>
+        )}
 
         <NoticeBox notice={fileNotice} />
         <NoticeBox notice={a.error ? { kind: "error", text: a.error } : null} />
-        {a.result && a.result.mapping.length > 0 && <MappingTable mapping={a.result.mapping} />}
+        {result && result.mapping.length > 0 && <MappingTable mapping={result.mapping} />}
       </main>
 
       <footer className="px-4 py-6">

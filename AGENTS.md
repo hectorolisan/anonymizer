@@ -15,7 +15,7 @@ This file provides guidance to coding agents when working with code in this repo
 ## Project
 
 **Anonimizador** replaces sensitive data (names, companies, emails, phones, DNI/NIE, amounts,
-addresses, bank accounts) with colour placeholders like `[PERSONA_1]` before pasting a text into a
+addresses, bank accounts) with placeholders like `[PERSONA_1]` before pasting a text into a
 cloud AI, and lists which real value each placeholder hides. Everything runs in the browser: regex plus an LLM
 on WebGPU via WebLLM (`@mlc-ai/web-llm`). Next.js 16 static export + React 19 + Tailwind CSS 4, no
 backend. Port of [beailabs/anonimizador](https://github.com/beailabs/anonimizador) (Python + Ollama).
@@ -42,8 +42,9 @@ and blocks build scripts for `sharp` / `unrs-resolver` — keep both when adding
 ## Architecture
 
 `src/app/page.tsx` renders `<AnonymizerApp />` (`src/components/anonymizer-app.tsx`), a client
-component with the header (model status + theme controls), input card, result card, mapping table
-and `Credit` footer. State lives in `src/hooks/use-anonymizer.ts`; the pipeline is
+component with the header (model selector/status + theme controls), one card that shows either the
+input editor or, after anonymising, only the result (`showResult`), the mapping table and the
+`Credit` footer. All categories are on by default (segmented toggle group in the input card). State lives in `src/hooks/use-anonymizer.ts`; the pipeline is
 `src/lib/anonymize.ts`; the model layer is `src/lib/engine.ts`; file reading is `src/lib/extract.ts`.
 
 Patterns that span files:
@@ -66,6 +67,7 @@ Patterns that span files:
   uses `response_format: json_object` with `ENTITIES_SCHEMA`, `temperature: 0`, Qwen3 thinking off,
   then `parseEntities()` validates; one retry, then an `AnonymizeError` — never a half-anonymised
   text. `MODEL_IDS` must be exact ids from WebLLM's `prebuiltAppConfig` (unknown ids are dropped).
+  `use-anonymizer.ts` loads the selected model on mount and whenever it changes (no download button).
 - **Errors**: `AnonymizeError` / `ExtractionError` messages are user-facing Spanish; anything else is
   wrapped as a generic browser error in `use-anonymizer.ts`. Without WebGPU the regex-only
   categories still work; model categories show an error.
@@ -75,8 +77,9 @@ Patterns that span files:
   snapshot of `true`; `ThemeControls` (reads `localStorage`/`matchMedia`) only renders after mount.
 - **Design tokens**: same system as `analytics-dashboard`. Tailwind 4 with no `tailwind.config` —
   everything is in `src/app/globals.css`: neutral surfaces, `--primary` set by `lib/theme.ts` from the
-  picked colour (teal by default), `good`/`bad`/`warn`, and the CVD-validated `--series-*` palette,
-  one per category via `CATEGORY_COLORS` in `lib/utils.ts` (`ph` utility reads `--c`). Light/dark is
+  picked colour (teal by default) and `good`/`bad`/`warn`. Placeholders (`ph` utility) and active
+  toggles use only `--primary`: no per-category colours. Tailwind runs through `@tailwindcss/postcss`
+  (`postcss.config.mjs`); the `@tailwindcss/turbopack` loader left `globals.css` stale in dev. Light/dark is
   the `.dark` class; `THEME_SCRIPT` applies mode and primary in `<head>` before first paint. Fonts are
   self-hosted with Fontsource: Poppins (`font-sans`), Bricolage Grotesque (`font-heading`, h1–h3),
   Geist Mono (`font-mono`). Use these tokens, not hardcoded colours.

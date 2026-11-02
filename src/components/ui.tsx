@@ -1,24 +1,19 @@
 "use client";
 
 import { Check, Copy } from "lucide-react";
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import type { MappingItem } from "@/lib/anonymize";
-import { CATEGORY_COLORS } from "@/lib/utils";
 
 export function Placeholder({ item }: { item: MappingItem }) {
-  return (
-    <mark className="ph" style={{ "--c": CATEGORY_COLORS[item.category] } as CSSProperties}>
-      {item.placeholder}
-    </mark>
-  );
+  return <mark className="ph">{item.placeholder}</mark>;
 }
 
-export function CopyButton({ text }: { text: string }) {
+export function CopyButton({ text, className }: { text: string; className: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+      className={className}
       disabled={!text}
       onClick={async () => {
         await navigator.clipboard.writeText(text);
@@ -26,7 +21,7 @@ export function CopyButton({ text }: { text: string }) {
         setTimeout(() => setCopied(false), 2000);
       }}
     >
-      {copied ? <Check className="size-3.5 text-good" /> : <Copy className="size-3.5" />}
+      {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
       {copied ? "Copiado" : "Copiar"}
     </button>
   );
