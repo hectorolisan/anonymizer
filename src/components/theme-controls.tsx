@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Moon, Palette, Sun } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { applyMode, applyPrimary, PRIMARY_COLORS, storedMode, storedPrimary } from "@/lib/theme";
 
 export const controlBase =
@@ -13,6 +13,7 @@ export function ThemeControls() {
   // Lazy init only runs on the client: this component is rendered after mount.
   const [mode, setMode] = useState(storedMode);
   const [primary, setPrimary] = useState(storedPrimary);
+  const trigger = useRef<HTMLButtonElement>(null);
 
   return (
     <>
@@ -29,14 +30,28 @@ export function ThemeControls() {
         {mode === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
       </button>
 
-      <button type="button" className={controlClass} popoverTarget="primary-picker" aria-label="Color primario">
+      <button
+        ref={trigger}
+        type="button"
+        className={controlClass}
+        popoverTarget="primary-picker"
+        aria-label="Color primario"
+      >
         <Palette className="size-4" />
         <span className="size-3 rounded-full bg-primary" />
       </button>
       <div
         id="primary-picker"
         popover="auto"
-        className="card fixed inset-auto top-16 right-4 m-0 w-56 p-3 text-foreground"
+        // Anchor under the trigger, right-aligned; absolute so it scrolls with the page.
+        onBeforeToggle={(e) => {
+          const r = trigger.current?.getBoundingClientRect();
+          if (e.newState !== "open" || !r) return;
+          const s = e.currentTarget.style;
+          s.top = `${r.bottom + window.scrollY + 8}px`;
+          s.right = `${document.documentElement.clientWidth - r.right}px`;
+        }}
+        className="card absolute inset-auto m-0 w-56 p-3 text-foreground"
       >
         <p className="mb-2 text-xs font-semibold tracking-[0.3em] text-muted-foreground uppercase">Color primario</p>
         <div role="radiogroup" aria-label="Color primario" className="grid grid-cols-6 gap-2">
