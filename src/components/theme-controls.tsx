@@ -3,6 +3,7 @@
 import { Check, Moon, Palette, Sun } from "lucide-react";
 import { useRef, useState } from "react";
 import { applyMode, applyPrimary, PRIMARY_COLORS, storedMode, storedPrimary } from "@/lib/theme";
+import { anchorUnder } from "./ui";
 
 export const controlBase =
   "inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50";
@@ -43,14 +44,7 @@ export function ThemeControls() {
       <div
         id="primary-picker"
         popover="auto"
-        // Anchor under the trigger, right-aligned; absolute so it scrolls with the page.
-        onBeforeToggle={(e) => {
-          const r = trigger.current?.getBoundingClientRect();
-          if (e.newState !== "open" || !r) return;
-          const s = e.currentTarget.style;
-          s.top = `${r.bottom + window.scrollY + 8}px`;
-          s.right = `${document.documentElement.clientWidth - r.right}px`;
-        }}
+        onBeforeToggle={(e) => e.newState === "open" && anchorUnder(trigger.current, e.currentTarget, "right")}
         className="card absolute inset-auto m-0 w-56 p-3 text-foreground"
       >
         <p className="mb-2 text-xs font-semibold tracking-[0.3em] text-muted-foreground uppercase">Color primario</p>

@@ -4,6 +4,17 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import type { MappingItem } from "@/lib/anonymize";
 
+// Place a popover under its trigger; `absolute` in the top layer so it scrolls with the page.
+export function anchorUnder(trigger: HTMLElement | null, popover: HTMLElement, align: "left" | "right") {
+  const r = trigger?.getBoundingClientRect();
+  if (!r) return;
+  const s = popover.style;
+  s.top = `${r.bottom + window.scrollY + 8}px`;
+  if (align === "left") s.left = `${r.left + window.scrollX}px`;
+  else s.right = `${document.documentElement.clientWidth - r.right}px`;
+  s.minWidth = `${r.width}px`;
+}
+
 export function Placeholder({ item }: { item: MappingItem }) {
   return <mark className="ph">{item.placeholder}</mark>;
 }
